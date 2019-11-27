@@ -11,6 +11,7 @@ using Aliyun.OSS;
 using System.IO.Compression;
 using System.ComponentModel;
 using System.Windows.Data;
+using System.Linq;
 
 namespace ksm_download
 {
@@ -33,6 +34,31 @@ namespace ksm_download
             levels = level.Split('/');
         }
     }
+
+    public class SongData:INotifyPropertyChanged
+    {
+        List<song> _songslist = new List<song>();
+        public List<song> songslist { 
+            get 
+            {
+                return _songslist;
+            } 
+            set
+            {
+                OnPropertyChanged("id");
+                _songslist = songslist;
+            }
+                                        
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+    }
     public partial class MainWindow : Window
     {
 
@@ -48,7 +74,7 @@ namespace ksm_download
 
         }
 
-        public List<song> songslist { get; set; } = new List<song>();
+        
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -104,7 +130,7 @@ namespace ksm_download
         private void Window_Loaded(object sender, RoutedEventArgs e)
 
         {
-            printLog("ksm下载器v0.3");
+            printLog("ksm下载器v0.4");
             printLog("设置ossutil中");
             client = new OssClient(endpoint, accessKeyId, accessKeySecret);
             printLog("设置成功");
@@ -112,11 +138,12 @@ namespace ksm_download
             Refresh_list();
         }
 
+        SongData sd = new SongData();
         private void Refresh_list()
         {
             printLog("正在获取歌曲列表");
             //songlistview.ItemsSource = null;
-            songslist.Clear();
+            sd = new SongData();
             Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
             
             
@@ -153,10 +180,9 @@ namespace ksm_download
             }
             for (int i = 0; i < selectedChild.Count; i++)
             {
-                songslist.Add(new song(ids[i], names[i], levels[i], artists[i]));
+                sd.songslist.Add(new song(ids[i], names[i], levels[i], artists[i]));
             }
-            songlistview.ItemsSource = null;
-            songlistview.ItemsSource = songslist;
+            songlistview.ItemsSource = sd.songslist;
             
             printLog("获取歌曲列表完成");
         }
@@ -177,17 +203,29 @@ namespace ksm_download
                     songExtPath = Environment.CurrentDirectory + "/songs/ksm-download-fanmade/";
                 }
                 Directory.CreateDirectory(songExtPath);
-                song selected = (song)songlistview.SelectedItem;
-                printLog("正在下载 " + selected.name);
-                stringDe de = new stringDe(printLog);
-                void nmsl()
+                
+                DownloadSelected();
+            }
+        }
+
+        void DownloadSelected()
+        {
+            stringDe de = new stringDe(printLog);
+            System.Collections.IList se = songlistview.SelectedItems;
+            var collection = se.Cast<song>();
+            List<song> selected = collection.ToList();
+            void nmsl()
+            {
+                for (int i = 0; i < selected.Count; i++)
                 {
-                    downloadTo("packages/" + selected.id + ".zip", songDownloadPath + selected.id + ".zip");
+                    this.Dispatcher.Invoke(de, "正在下载第"+(i+1)+"个，共"+selected.Count+"个");
+                    this.Dispatcher.Invoke(de, selected[i].name);
+                    downloadTo("packages/" + selected[i].id + ".zip", songDownloadPath + selected[i].id + ".zip");
                     this.Dispatcher.Invoke(de, "下载完毕");
                     this.Dispatcher.Invoke(de, "准备解压");
                     try
                     {
-                        ZipFile.ExtractToDirectory(songDownloadPath + selected.id + ".zip", songExtPath);
+                        ZipFile.ExtractToDirectory(songDownloadPath + selected[i].id + ".zip", songExtPath);
                     }
                     catch (Exception ex)
                     {
@@ -195,15 +233,13 @@ namespace ksm_download
                     }
                     //unzip("-o songs/" + selected.id + ".zip -d songs/ksm-download");
                     this.Dispatcher.Invoke(de, "解压完毕");
-                    System.IO.File.Delete(songDownloadPath + selected.id + ".zip");
-                    System.Media.SystemSounds.Beep.Play();
+                    System.IO.File.Delete(songDownloadPath + selected[i].id + ".zip");
                 }
-                Thread a = new Thread(new ThreadStart(nmsl));
-
-                a.Start();
-
-
+                System.Media.SystemSounds.Beep.Play();
             }
+            Thread a = new Thread(new ThreadStart(nmsl));
+
+            a.Start();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -345,6 +381,35 @@ namespace ksm_download
             bucketName = "ksm-fanmade";
             selectedSort = 1;
             Refresh_list();
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (SearchBox.Text != "")
+            {
+                List<song> data = sd.songslist.FindAll(
+                    delegate (song _song)
+                    {
+                        return _song.name.ToLower().Contains(SearchBox.Text) || _song.name.ToUpper().Contains(SearchBox.Text)
+                     || _song.artist.ToLower().Contains(SearchBox.Text) || _song.name.ToUpper().Contains(SearchBox.Text)
+                     || _song.level.Contains(SearchBox.Text);
+                    }
+                    );
+                songlistview.ItemsSource = data;
+            }
+            else
+            {
+                songlistview.ItemsSource = sd.songslist;
+            }
+        }
+
+        private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (SearchBox.Text == "Search")
+            {
+                SearchBox.Text = "";
+            }
+            
         }
     }
 }
