@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ksm_download"
         xmlns:Properties="clr-namespace:ksm_download.Properties" xmlns:System="clr-namespace:System;assembly=mscorlib" x:Class="ksm_download.MainWindow"
         mc:Ignorable="d"
-        Title="歌曲下载器" Height="405" Width="595" Initialized="Window_Initialized" Loaded="Window_Loaded" FontFamily="Yu Gothic UI Semilight" BorderThickness="1" BorderBrush="{Binding BorderBrush, ElementName=button}" MinWidth="595" MinHeight="405">
+        Title="谱面下载器" Height="377" Width="829" Loaded="Window_Loaded" FontFamily="Yu Gothic UI Semilight" BorderThickness="1" BorderBrush="{Binding BorderBrush, ElementName=button}" MinWidth="595" MinHeight="350">
     <Grid Margin="0,0,2,0">
 
         <Image x:Name="SongImg_Copy" Margin="-10,-10,-10,-9.6" Source="{Binding Source, ElementName=SongImg}" RenderTransformOrigin="0.5,0.5" Stretch="UniformToFill">
@@ -26,7 +26,8 @@
                     <GridViewColumn Header="EXH" DisplayMemberBinding="{Binding levels[2]}" Width="32"/>
                     <GridViewColumn Header="MXM"  DisplayMemberBinding="{Binding levels[3]}" Width="32"/>
                     <GridViewColumn Header="Name"  DisplayMemberBinding="{Binding name}" Width="200"/>
-                    <GridViewColumn Header="Artist"  DisplayMemberBinding="{Binding artist}" Width="200"/>
+                    <GridViewColumn Header="Artist"  DisplayMemberBinding="{Binding artist}" Width="100"/>
+                    <GridViewColumn Header="Effector"  DisplayMemberBinding="{Binding charter}" Width="100"/>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -56,7 +57,6 @@
                 </LinearGradientBrush>
             </Button.BorderBrush>
         </Button>
-        <Button Content="￥" Margin="0,0,35,13" BorderBrush="{Binding BorderBrush, ElementName=button}" Background="#FF4B4D57" Foreground="White" FontFamily="YouYuan" Click="Button_Click_2" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" BorderThickness="2"/>
         <ScrollViewer Margin="10,24,0,213" Background="#7FFFFFFF"  VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="199" BorderThickness="2" PanningMode="VerticalOnly">
             <ScrollViewer.BorderBrush>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -107,16 +107,6 @@
                 </LinearGradientBrush>
             </Button.BorderBrush>
         </Button>
-        <RadioButton x:Name="officialRadioB" Content="官方" HorizontalAlignment="Right" Margin="0,0,109,17" VerticalAlignment="Bottom" Foreground="White" GroupName="Sort" IsChecked="True" Click="officialRadioB_Checked">
-            <RadioButton.Effect>
-                <DropShadowEffect/>
-            </RadioButton.Effect>
-        </RadioButton>
-        <RadioButton x:Name="fanmadeRadioB" Content="自制" Margin="0,0,61,17" Foreground="White" GroupName="Sort" Height="15" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="43" Click="fanmadeRadioB_Checked">
-            <RadioButton.Effect>
-                <DropShadowEffect/>
-            </RadioButton.Effect>
-        </RadioButton>
         <TextBox x:Name="SearchBox" Height="21" Margin="306,0,0,13" TextWrapping="Wrap" Text="Search" VerticalAlignment="Bottom" TextChanged="TextBox_TextChanged" Background="#F8FFFFFF" HorizontalAlignment="Left" Width="111" GotFocus="SearchBox_GotFocus" VerticalContentAlignment="Center">
             <TextBox.BorderBrush>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -125,6 +115,44 @@
                 </LinearGradientBrush>
             </TextBox.BorderBrush>
         </TextBox>
+        <Button x:Name="button_prev" Content="&lt;" Margin="0,0,108,13" Background="White" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" BorderThickness="2" RenderTransformOrigin="-0.127,0.476" FontWeight="Bold" Click="button_prev_Click">
+            <Button.BorderBrush>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
+                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
+                </LinearGradientBrush>
+            </Button.BorderBrush>
+        </Button>
+        <Button x:Name="button_next" Content="&gt;" Margin="0,0,50,13" Background="White" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" BorderThickness="2" FontWeight="Bold" Click="button_next_Click">
+            <Button.BorderBrush>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
+                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
+                </LinearGradientBrush>
+            </Button.BorderBrush>
+        </Button>
+        <TextBox x:Name="Page_Box" Height="21" Margin="0,0,76,13" TextWrapping="Wrap" Text="1" VerticalAlignment="Bottom" TextChanged="Page_Box_TextChanged" Background="#F8FFFFFF" HorizontalAlignment="Right" Width="27" VerticalContentAlignment="Center" TextAlignment="Center">
+            <TextBox.BorderBrush>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
+                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
+                </LinearGradientBrush>
+            </TextBox.BorderBrush>
+        </TextBox>
+        <Button x:Name="button_preview" Content="▶" HorizontalAlignment="Left" Width="35" Margin="10,0,0,10" BorderBrush="{x:Null}" Background="#B2000000" Foreground="White" Height="35" VerticalAlignment="Bottom" Click="button_preview_Click">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" ContentStringFormat="{TemplateBinding ContentStringFormat}" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
 
 
     </Grid>

@@ -6,32 +6,32 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using System.Xml;
-using Aliyun.OSS;
 using System.IO.Compression;
 using System.ComponentModel;
 using System.Windows.Data;
 using System.Linq;
+using ksm_download.JsonFormats;
+using System.Windows.Media;
 
 namespace ksm_download
 {
     /// <summary>
-    /// MainWindow.xaml 的交互逻辑
+    /// 和listview绑定的类
     /// </summary>
     public class song
     {
-        public string id { get; set; }
+        public Guid id { get; set; }
         public string name { get; set; }
-        public string level { get; set; }
         public string[] levels { get; set; }
         public string artist { get; set; }
-        public song(string _id, string _name, string _lv, string _art)
+        public string charter { get; set; }
+        public song(string _id, string _name, string[] _lv, string _art,string _charter)
         {
-            id = _id;
+            id = new Guid(_id);
             name = _name;
-            level = _lv;
             artist = _art;
-            levels = level.Split('/');
+            levels = _lv;
+            charter = _charter;
         }
     }
 
@@ -61,24 +61,15 @@ namespace ksm_download
     }
     public partial class MainWindow : Window
     {
-
-        string endpoint = "oss-cn-shanghai.aliyuncs.com";
-        string accessKeyId = "LTAIGTuicNd5bdm3";
-        string accessKeySecret = "hxsgrUuol43h2vwBIoyckb3Bhz91Dv";
-        string bucketName = "ksm-songs";
-        OssClient client;
-
+        const string songlistAPI = "http://ksm-proxy.littlec.tunergames.com/api/songs";
+        const string getpicAPI = "http://ksm-proxy.littlec.tunergames.com/api/getJacket";
+        const string getpreviewAPI = "http://ksm-proxy.littlec.tunergames.com/api/getPreview";
+        SongData sd = new SongData();//现在显示的歌曲列表(与显示列表绑定)
+        SongListJson jslist = new SongListJson();//下载的列表
+        int currentPage = 1;
         public MainWindow()
         {
             InitializeComponent();
-
-        }
-
-        
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-
         }
 
         void printLog(string a)
@@ -90,101 +81,42 @@ namespace ksm_download
 
         void SetProgressValue(int a) => progressBar.Value = a;
 
-        void streamProgressCallback(object sender, StreamTransferProgressArgs args)
-        {
-            ProgressChange pc = new ProgressChange(SetProgressValue);
-            this.Dispatcher.Invoke(pc, (int)(args.TransferredBytes * 100 / args.TotalBytes));
-        }
-
-        void downloadTo(string objectName, string downloadFilename)
-        {
-            try
-            {
-                Console.WriteLine("?"+bucketName);
-                var getObjectRequest = new GetObjectRequest(bucketName, objectName);
-                getObjectRequest.StreamTransferProgress += streamProgressCallback;
-                // 下载文件到流。OssObject 包含了文件的各种信息，如文件所在的存储空间、文件名、元信息以及一个输入流。
-                var obj = client.GetObject(getObjectRequest);
-                File.WriteAllText(downloadFilename, "");
-                using (var requestStream = obj.Content)
-                {
-                    byte[] buf = new byte[1024 * 1024];
-                    var fs = File.Open(downloadFilename, FileMode.OpenOrCreate);
-                    
-                    var len = 0;
-                    // 通过输入流将文件的内容读取到文件或者内存中。
-                    while ((len = requestStream.Read(buf, 0, buf.Length)) != 0)
-                    {
-                        fs.Write(buf, 0, len);
-                    }
-                    fs.Close();
-                }
-                Console.WriteLine("Get object succeeded");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Get object failed. " + ex.Message);
-            }
-        }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
-
         {
-            printLog("ksm下载器v0.4");
-            printLog("设置ossutil中");
-            client = new OssClient(endpoint, accessKeyId, accessKeySecret);
-            printLog("设置成功");
-            printLog("要是可以的话不妨在右下角打赏几块钱来买流量QAQ");
+            printLog("ksm下载器v0.4k");
             Refresh_list();
         }
 
-        SongData sd = new SongData();
-        private void Refresh_list()
+        
+        private async void Refresh_list()
         {
-            printLog("正在获取歌曲列表");
-            //songlistview.ItemsSource = null;
-            sd = new SongData();
+            printLog(String.Format("正在获取歌曲列表,第{0}页",currentPage));
+            sd = new SongData();//清空列表
+            button_next.IsEnabled = false;
+            button_prev.IsEnabled = false;
+            Page_Box.IsEnabled = false;
             Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
+            jslist = await Download.downloadJson<SongListJson>(songlistAPI+"?page="+currentPage);
+
+            foreach(var a in jslist.Data)
+            {
+                string[] levels = new string[4];
+                string charters = "";
+                foreach(var chart in a.Charts)
+                {
+                    levels[chart.Difficulty-1] = chart.Level.ToString();
+                    if (chart.Effector != charters && charters != "") charters += " / " + chart.Effector;
+                    else if (chart.Effector != charters) charters = chart.Effector;
+                }
+                song thissong = new song(a.Id.ToString(), a.Title, levels, a.Artist,charters);
+                sd.songslist.Add(thissong);
+            }
             
-            
-            downloadTo("list.xml", Environment.CurrentDirectory + "/ksmdownload/list.xml");
-            XmlDocument xml = new XmlDocument();
-            xml.Load("ksmdownload/list.xml");
-            XmlNodeList selectedChild = xml.SelectNodes("/songs/chart/id");
-            string[] ids = new string[selectedChild.Count];
-            string[] names = new string[selectedChild.Count];
-            string[] levels = new string[selectedChild.Count];
-            string[] artists = new string[selectedChild.Count];
-            for (int i = 0; i < selectedChild.Count; i++)
-            {
-                ids[i] = selectedChild[i].InnerText;
-                //printLog(ids[i]);
-            }
-            selectedChild = xml.SelectNodes("/songs/chart/name");
-            for (int i = 0; i < selectedChild.Count; i++)
-            {
-                names[i] = selectedChild[i].InnerText;
-                // printLog(names[i]);
-            }
-            selectedChild = xml.SelectNodes("/songs/chart/artist");
-            for (int i = 0; i < selectedChild.Count; i++)
-            {
-                artists[i] = selectedChild[i].InnerText;
-                //printLog(artists[i]);
-            }
-            selectedChild = xml.SelectNodes("/songs/chart/level");
-            for (int i = 0; i < selectedChild.Count; i++)
-            {
-                levels[i] = selectedChild[i].InnerText;
-                //printLog(levels[i]);
-            }
-            for (int i = 0; i < selectedChild.Count; i++)
-            {
-                sd.songslist.Add(new song(ids[i], names[i], levels[i], artists[i]));
-            }
             songlistview.ItemsSource = sd.songslist;
-            
             printLog("获取歌曲列表完成");
+            button_next.IsEnabled = true;
+            button_prev.IsEnabled = true;
+            Page_Box.IsEnabled = true;
         }
 
         delegate void stringDe(string a);
@@ -192,20 +124,9 @@ namespace ksm_download
         static string songDownloadPath = Environment.CurrentDirectory + "/songs/";
         private void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
-            if (songlistview.SelectedItem != null)
-            {
-                if (selectedSort == 0)
-                {
-                    songExtPath = Environment.CurrentDirectory + "/songs/ksm-download/";
-                }
-                else
-                {
-                    songExtPath = Environment.CurrentDirectory + "/songs/ksm-download-fanmade/";
-                }
                 Directory.CreateDirectory(songExtPath);
                 
-                DownloadSelected();
-            }
+                //DownloadSelected();
         }
 
         void DownloadSelected()
@@ -220,7 +141,7 @@ namespace ksm_download
                 {
                     this.Dispatcher.Invoke(de, "正在下载第"+(i+1)+"个，共"+selected.Count+"个");
                     this.Dispatcher.Invoke(de, selected[i].name);
-                    downloadTo("packages/" + selected[i].id + ".zip", songDownloadPath + selected[i].id + ".zip");
+                    //downloadTo("packages/" + selected[i].id + ".zip", songDownloadPath + selected[i].id + ".zip");
                     this.Dispatcher.Invoke(de, "下载完毕");
                     this.Dispatcher.Invoke(de, "准备解压");
                     try
@@ -245,15 +166,8 @@ namespace ksm_download
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             log.Text = "";
-
+            //清空log
         }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            Money my = new Money();
-            my.Show();
-        }
-
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Process.Start("tencent://AddContact/?fromId=45&fromSubId=1&subcmd=all&uin=1323291094");
@@ -265,33 +179,31 @@ namespace ksm_download
         /// <summary>
         /// 载入图片
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void songlistview_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void songlistview_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            
-            song selected = (song)songlistview.SelectedItem;
+            mediaPlayer.Stop();
+            isPlaying = false;
+            button_preview.Content = "▶";
 
-            if (selectedSort == 0)
-            {
-                imgfilePath = Environment.CurrentDirectory + "/ksmdownload/imgtmp/";
-            }
-            else
-            {
-                imgfilePath = Environment.CurrentDirectory + "/ksmdownload/imgtmp2/";
-            }
-            Directory.CreateDirectory(imgfilePath);
+            song selected = (song)songlistview.SelectedItem;
             if (selected != null)
             {
-                BitmapImage bmp = new BitmapImage();
-                bmp.BeginInit();//初始化
-                if (!File.Exists(imgfilePath + selected.id + ".jpg"))
+                Directory.CreateDirectory(imgfilePath);
+                var thesong = jslist.Data.First(o => o.Id == selected.id);
+                //请求图片
+                string filepath = String.Format("{0}{1}_{2}", imgfilePath, thesong.Id.ToString(), thesong.JacketFilename);
+                string request = String.Format("{0}?id={1}&filename={2}", getpicAPI, thesong.Id.ToString(),thesong.JacketFilename);
+                if (!File.Exists(filepath))
                 {
-                    downloadTo("img/" + selected.id + ".jpg", imgfilePath + selected.id + ".jpg");
+                    SongImg.Opacity = 0.5;
+                    printLog("正在载图");
+                    await Download.downloadFile(request, filepath);
+                    SongImg.Opacity = 1;
                 }
 
-                bmp.UriSource = new Uri(imgfilePath + selected.id + ".jpg", UriKind.Absolute);//设置图片路径
-
+                BitmapImage bmp = new BitmapImage();
+                bmp.BeginInit();//初始化
+                bmp.UriSource = new Uri(filepath, UriKind.Absolute);//设置图片路径
                 bmp.EndInit();//结束初始化
                 SongImg.Source = bmp;
             }
@@ -363,44 +275,9 @@ namespace ksm_download
         }
 
 
-        int selectedSort = 0;
-        /// <summary>
-        /// 换sort
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void officialRadioB_Checked(object sender, RoutedEventArgs e)
-        {
-            bucketName = "ksm-songs";
-            selectedSort = 0;
-            Refresh_list();
-        }
-
-        private void fanmadeRadioB_Checked(object sender, RoutedEventArgs e)
-        {
-            bucketName = "ksm-fanmade";
-            selectedSort = 1;
-            Refresh_list();
-        }
-
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (SearchBox.Text != "")
-            {
-                List<song> data = sd.songslist.FindAll(
-                    delegate (song _song)
-                    {
-                        return _song.name.ToLower().Contains(SearchBox.Text) || _song.name.ToUpper().Contains(SearchBox.Text)
-                     || _song.artist.ToLower().Contains(SearchBox.Text) || _song.name.ToUpper().Contains(SearchBox.Text)
-                     || _song.level.Contains(SearchBox.Text);
-                    }
-                    );
-                songlistview.ItemsSource = data;
-            }
-            else
-            {
-                songlistview.ItemsSource = sd.songslist;
-            }
+
         }
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -410,6 +287,87 @@ namespace ksm_download
                 SearchBox.Text = "";
             }
             
+        }
+
+        private void button_next_Click(object sender, RoutedEventArgs e)
+        {
+            int page = currentPage;
+            page++;
+            Page_Box.Text = page.ToString();
+        }
+
+        private void button_prev_Click(object sender, RoutedEventArgs e)
+        {
+            int page = currentPage;
+            if (page < 2) page = 1;
+            else page--;
+            Page_Box.Text = page.ToString();
+        }
+
+        private void Page_Box_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            int page = 1;
+            try
+            {
+                page = int.Parse(Page_Box.Text);
+                if (page != currentPage)
+                {
+                    if (page < 2) currentPage = 1;
+                    else currentPage = page;
+
+                    Refresh_list();
+                }
+            }
+            catch
+            {
+                Page_Box.Text = "1";
+                if (currentPage != 1)
+                {
+                    currentPage = 1;
+                    Refresh_list();
+                }
+            }
+        }
+        static string previewfilePath = Environment.CurrentDirectory + "/ksmdownload/prevtmp/";
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        bool isPlaying = false;
+        private async void button_preview_Click(object sender, RoutedEventArgs e)
+        {
+            if (isPlaying)
+            {
+                mediaPlayer.Stop();
+                button_preview.Content = "▶";
+                isPlaying = false;
+                return;
+            }
+            song selected = (song)songlistview.SelectedItem;
+            if (selected != null)
+            {
+                Directory.CreateDirectory(previewfilePath);
+                var thesong = jslist.Data.First(o => o.Id == selected.id);
+                //请求图片
+                string filepath = String.Format("{0}{1}_{2}", previewfilePath, thesong.Id.ToString(), "preview.mp3");
+                string request = String.Format("{0}?id={1}&filename={2}", getpreviewAPI, thesong.Id.ToString(), "preview.mp3");
+                button_preview.IsEnabled = false;
+                button_preview.Content = "...";
+                if (!File.Exists(filepath))
+                {
+                    printLog("正在下载试听");
+                    await Download.downloadFile(request, filepath);
+                }
+                button_preview.Content = "■";
+                button_preview.IsEnabled = true;
+                mediaPlayer.Open(new Uri(filepath));
+                mediaPlayer.Play();
+                isPlaying = true;
+                mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
+            }
+        }
+
+        private void MediaPlayer_MediaEnded(object sender, EventArgs e)
+        {
+            button_preview.Content = "▶";
+            isPlaying = false;
         }
     }
 }
