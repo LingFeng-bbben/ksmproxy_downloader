@@ -68,10 +68,12 @@ namespace ksm_download
         const string loginAPI = "https://ksm-proxy.littlec.tunergames.com/api/login";
         const string usrinfoAPI = "https://ksm-proxy.littlec.tunergames.com/api/userInfo";
         const string reqDownAPI = "https://ksm-proxy.littlec.tunergames.com/api/applyDownload?id=";
+        const string cachestaAPI = "https://ksm-proxy.littlec.tunergames.com/api/getCacheStatus?id=";
         const string songDownloadUrl = "https://ksm-proxy.littlec.tunergames.com/download/";
         SongData sd = new SongData();//现在显示的歌曲列表(与显示列表绑定)
         SongListJson jslist = new SongListJson();//下载的列表
         int currentPage = 1;
+        int maxPage = 555;
         public MainWindow()
         {
             InitializeComponent();
@@ -82,19 +84,20 @@ namespace ksm_download
             log.Text = a + "\n"+ log.Text;
         }
 
-        delegate void ProgressChange(int a);
-
-        void SetProgressValue(int a) => progressBar.Value = a;
-
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             printLog("ksm下载器v0.4k");
+            timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
             if (File.Exists(cookiefilePath))
             {
                 cookie = File.ReadAllText(cookiefilePath);
                 if (!await updateUsrInfo())
                 {
                     panel_login.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    panel_login.Visibility = Visibility.Collapsed;
                 }
             }
             else
@@ -113,23 +116,34 @@ namespace ksm_download
             button_prev.IsEnabled = false;
             Page_Box.IsEnabled = false;
             Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
-            var jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI+"?page="+currentPage);
-            jslist = jsroot.Data;
-
-            foreach(var a in jslist.Data)
+            SongListJsonRoot jsroot = new SongListJsonRoot();
+            if (SearchBox.Text != "Search" && SearchBox.Text != "")
             {
-                string[] levels = new string[4];
-                string charters = "";
-                foreach(var chart in a.Charts)
-                {
-                    levels[chart.Difficulty-1] = chart.Level.ToString();
-                    if (chart.Effector != charters && charters != "") charters += " / " + chart.Effector;
-                    else if (chart.Effector != charters) charters = chart.Effector;
-                }
-                song thissong = new song(a.Id.ToString(), a.Title, levels, a.Artist,charters);
-                sd.songslist.Add(thissong);
+                jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI +"?songs="+SearchBox.Text+ "&page=" + currentPage);
+            }
+            else {
+                jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI + "?page=" + currentPage);
             }
             
+
+            if (jsroot.Data.Data != null)
+            {
+                jslist = jsroot.Data;
+                foreach (var a in jslist.Data)
+                {
+                    string[] levels = new string[4];
+                    string charters = "";
+                    foreach (var chart in a.Charts)
+                    {
+                        levels[chart.Difficulty - 1] = chart.Level.ToString();
+                        if (chart.Effector != charters && charters != "") charters += " / " + chart.Effector;
+                        else if (chart.Effector != charters) charters = chart.Effector;
+                    }
+                    song thissong = new song(a.Id.ToString(), a.Title, levels, a.Artist, charters);
+                    sd.songslist.Add(thissong);
+                }
+            }
+            maxPage = jslist.Meta.LastPage;
             songlistview.ItemsSource = sd.songslist;
             printLog("获取歌曲列表完成");
             button_next.IsEnabled = true;
@@ -159,18 +173,30 @@ namespace ksm_download
             {
                 printLog("正在下载第" + (i + 1) + "个，共" + selected.Count + "个");
                 printLog(selected[i].name);
-                printLog("请求服务器缓存...");
-                SongListJsonRoot jsroot = await Download.downloadJson<SongListJsonRoot>(reqDownAPI + selected[i].id.ToString(), keyValuePairs);
-                if (jsroot.Code == 404)
+                if (await Download.downloadText(cachestaAPI + selected[i].id.ToString()) == "0")
                 {
-                    printLog("歌曲不存在");
-                    continue;
-                }
-                if (jsroot.Code == 403)
-                {
-                    System.Media.SystemSounds.Exclamation.Play();
-                    MessageBox.Show("本日下载次数已用光", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    if (cookie != "")
+                    {
+                        printLog("请求服务器缓存...");
+                        SongListJsonRoot jsroot = await Download.downloadJson<SongListJsonRoot>(reqDownAPI + selected[i].id.ToString(), keyValuePairs);
+                        if (jsroot.Code == 404)
+                        {
+                            printLog("歌曲不存在");
+                            continue;
+                        }
+                        if (jsroot.Code == 403)
+                        {
+                            System.Media.SystemSounds.Exclamation.Play();
+                            MessageBox.Show("本日请求次数已用光", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("本歌曲还未缓存，请登录请求缓存", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
+                        panel_login.Visibility = Visibility.Visible;
+                        return;
+                    }
                 }
                 string downloadFilename = songDownloadPath + selected[i].id + ".zip";
                 printLog("正在下载");
@@ -205,7 +231,7 @@ namespace ksm_download
         }
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start("tencent://AddContact/?fromId=45&fromSubId=1&subcmd=all&uin=1323291094");
+            System.Diagnostics.Process.Start("tencent://groupwpa/?subcmd=all\x26param=7b2267726f757055696e223a3437313236333538372c2274696d655374616d70223a313631353139313937392c22617574684b6579223a224e78615a4d48774e3171393852397a56564f59675448336b706368524b55715a6b396f38773378667076616241426a515a333159326772575763654367666273222c2261757468223a22227d");
             //打开qq窗口
         }
 
@@ -248,7 +274,7 @@ namespace ksm_download
 
         }
 
-
+        
         private void button1_Copy_Click(object sender, RoutedEventArgs e)
         {
             Refresh_list();
@@ -312,10 +338,34 @@ namespace ksm_download
 
         }
 
-
+        //搜索
+        System.Timers.Timer timer = new System.Timers.Timer(1000);
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            timer.Stop();
+            timer.Start();
+        }
 
+        private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            timer.Stop();
+            this.Dispatcher.Invoke(new Action(() =>
+            {
+                if (SearchBox.Text != "Search")
+                {
+                    currentPage = 1;
+                    Refresh_list();
+                }
+            }));
+            
+        }
+
+        private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (SearchBox.Text == "")
+            {
+                SearchBox.Text = "Search";
+            }
         }
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -330,14 +380,15 @@ namespace ksm_download
         private void button_next_Click(object sender, RoutedEventArgs e)
         {
             int page = currentPage;
-            page++;
+            if (page >= maxPage) page = maxPage;
+            else page++;
             Page_Box.Text = page.ToString();
         }
 
         private void button_prev_Click(object sender, RoutedEventArgs e)
         {
             int page = currentPage;
-            if (page < 2) page = 1;
+            if (page <= 1) page = 1;
             else page--;
             Page_Box.Text = page.ToString();
         }
@@ -350,7 +401,8 @@ namespace ksm_download
                 page = int.Parse(Page_Box.Text);
                 if (page != currentPage)
                 {
-                    if (page < 2) currentPage = 1;
+                    if (page <= 1) currentPage = 1;
+                    else if (page >= maxPage) currentPage = maxPage;
                     else currentPage = page;
 
                     Refresh_list();
@@ -451,12 +503,25 @@ namespace ksm_download
                 printLog(jsonRoot.Msg);
                 return false;
             }
-            label_user.Content = String.Format("剩余下载次数:{0}    {1}", jsonRoot.Data.AvailableDownloadTimes, jsonRoot.Data.Usrname);
-            return true;
+            if (jsonRoot.Data.AvailableDownloadTimes == 2147483646)
+            {
+                label_user.Content = "𝖁𝕴𝕻  " + jsonRoot.Data.Usrname;
+                return true;
+            }
+            else
+            {
+                label_user.Content = String.Format("剩余下载次数:{0}    {1}", jsonRoot.Data.AvailableDownloadTimes, jsonRoot.Data.Usrname);
+                return true;
+            }
         }
 
         private void label_user_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if(cookie == "")
+            {
+                panel_login.Visibility = Visibility.Visible;
+                return;
+            }
             if(MessageBox.Show("要退出登录吗", "提示", MessageBoxButton.YesNo, MessageBoxImage.Asterisk) == MessageBoxResult.Yes)
             {
                 File.Delete(cookiefilePath);
@@ -470,5 +535,14 @@ namespace ksm_download
         {
             System.Diagnostics.Process.Start("http://netedu.xauat.edu.cn/jpkc/netedu/jpkc/gdsx/homepage/5jxsd/51/513/5308/530805.htm");
         }
+
+        private void label_skip_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            cookie = "";
+            label_user.Content = "GUEST";
+            panel_login.Visibility = Visibility.Collapsed;
+        }
+
+        
     }
 }

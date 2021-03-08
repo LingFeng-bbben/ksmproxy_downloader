@@ -16,7 +16,7 @@ namespace ksm_download.JsonFormats
     }
     public partial class SongListJson
     {
-        [JsonProperty("data")]
+        [JsonProperty("data", NullValueHandling = NullValueHandling.Ignore)]
         public Datum[] Data { get; set; }
 
         [JsonProperty("meta")]
@@ -165,13 +165,13 @@ namespace ksm_download.JsonFormats
     public partial class Meta
     {
         [JsonProperty("current_page")]
-        public long CurrentPage { get; set; }
+        public int CurrentPage { get; set; }
 
-        [JsonProperty("from")]
+        [JsonProperty("from", NullValueHandling = NullValueHandling.Ignore)]
         public long From { get; set; }
 
         [JsonProperty("last_page")]
-        public long LastPage { get; set; }
+        public int LastPage { get; set; }
 
         [JsonProperty("path")]
         public Uri Path { get; set; }
@@ -179,7 +179,7 @@ namespace ksm_download.JsonFormats
         [JsonProperty("per_page")]
         public long PerPage { get; set; }
 
-        [JsonProperty("to")]
+        [JsonProperty("to", NullValueHandling = NullValueHandling.Ignore)]
         public long To { get; set; }
 
         [JsonProperty("total")]

@@ -107,7 +107,7 @@
                 </LinearGradientBrush>
             </Button.BorderBrush>
         </Button>
-        <TextBox x:Name="SearchBox" Height="21" Margin="306,0,0,13" TextWrapping="Wrap" Text="Search" VerticalAlignment="Bottom" TextChanged="TextBox_TextChanged" Background="#F8FFFFFF" HorizontalAlignment="Left" Width="111" GotFocus="SearchBox_GotFocus" VerticalContentAlignment="Center">
+        <TextBox x:Name="SearchBox" Height="21" Margin="326,0,153,13" TextWrapping="Wrap" Text="Search" VerticalAlignment="Bottom" TextChanged="TextBox_TextChanged" Background="#F8FFFFFF" GotFocus="SearchBox_GotFocus" VerticalContentAlignment="Center" LostFocus="SearchBox_LostFocus">
             <TextBox.BorderBrush>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FFFD96BC" Offset="0.234"/>
@@ -164,6 +164,7 @@
             <PasswordBox x:Name="textbox_password" PasswordChar="◈" Height="23" HorizontalAlignment="Center" Width="200" Margin="0,10,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
             <Label x:Name="label_register" Content="没有账户？点我注册" Foreground="#FFAFB2EE" HorizontalAlignment="Center" Margin="0,10,0,0" MouseDown="label_register_MouseDown"/>
             <Button x:Name="button_login" Content="OK" Margin="0,20,0,0" Height="30" HorizontalAlignment="Center" Width="60" UseLayoutRounding="False" Click="button_login_Click"/>
+            <Label x:Name="label_skip" Content="跳过" Foreground="White" HorizontalAlignment="Center" Margin="349.5,10,349.5,0" MouseDown="label_skip_MouseDown"/>
         </StackPanel>
 
 
