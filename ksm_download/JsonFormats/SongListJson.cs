@@ -1,15 +1,23 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace ksm_download.JsonFormats
 {
+    public class SongListJsonRoot
+    {
+        [JsonProperty("code")]
+        public int Code { get; set; }
+
+        [JsonProperty("data", NullValueHandling = NullValueHandling.Ignore)]
+        public SongListJson Data { get; set; }
+
+        [JsonProperty("msg")]
+        public string Message { get; set; }
+    }
     public partial class SongListJson
     {
         [JsonProperty("data")]
         public Datum[] Data { get; set; }
-
-        [JsonProperty("links")]
-        public Links Links { get; set; }
 
         [JsonProperty("meta")]
         public Meta Meta { get; set; }
@@ -153,20 +161,6 @@ namespace ksm_download.JsonFormats
         public long SongCount { get; set; }
     }
 
-    public partial class Links
-    {
-        [JsonProperty("first")]
-        public Uri First { get; set; }
-
-        [JsonProperty("last")]
-        public Uri Last { get; set; }
-
-        [JsonProperty("prev")]
-        public object Prev { get; set; }
-
-        [JsonProperty("next")]
-        public Uri Next { get; set; }
-    }
 
     public partial class Meta
     {

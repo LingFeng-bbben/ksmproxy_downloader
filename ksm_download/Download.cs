@@ -6,14 +6,23 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using ksm_download.JsonFormats;
 
 namespace ksm_download
 {
     static class Download
     {
-        public static async Task<bool> downloadFile(string url, string path)
+        public static async Task<bool> downloadFile(string url, string path, Dictionary<string, string> keypair = null)
         {
             WebClient wc = new WebClient();
+            if (keypair != null)
+            {
+                foreach (var item in keypair)
+                {
+                    wc.Headers.Add(item.Key, item.Value);
+                }
+            }
             Console.WriteLine("downloading");
             try
             {
@@ -29,18 +38,21 @@ namespace ksm_download
             }
         }
 
-        public static async Task<T> downloadJson<T>(string url, string cookie = "", string bearer = "")
+        public static async Task<T> downloadJson<T>(string url, Dictionary<string, string> keypair = null)
         {
-            return JsonConvert.DeserializeObject<T>(await downloadText(url, cookie, bearer));
+            return JsonConvert.DeserializeObject<T>(await downloadText(url, keypair));
         }
 
-        public static async Task<string> downloadText(string url,string cookie = "",string bearer = "",string usragt="")
+        public static async Task<string> downloadText(string url,Dictionary<string,string> keypair = null)
         {
-
             WebClient wc = new WebClient();
-            if (cookie != "") wc.Headers.Add("cookie", cookie);
-            if (usragt != "") wc.Headers.Add("User-Agent", usragt);
-            if (bearer != "") wc.Headers.Add("authorization", "Bearer " + bearer);
+            if (keypair != null)
+            {
+                foreach(var item in keypair)
+                {
+                    wc.Headers.Add(item.Key, item.Value);
+                }
+            }
 
             Console.WriteLine("downloading " + url);
             try
@@ -55,6 +67,30 @@ namespace ksm_download
                 Console.WriteLine("failed." + e.Message);
                 return default;
             }
+        }
+
+        public static async Task<string> login(string url, string usrname,string password)
+        {
+            WebClient wc = new WebClient();
+            try
+            {
+                string jsondata = JsonConvert.SerializeObject(new LoginJson(usrname, password));
+                byte[] buffer = Encoding.UTF8.GetBytes(jsondata);
+                byte[] data = await wc.UploadDataTaskAsync(url, "POST", buffer);
+                string text = Encoding.UTF8.GetString(data);
+                SongListJsonRoot js = JsonConvert.DeserializeObject<SongListJsonRoot>(text);
+                if (js.Code != 200)
+                {
+                    return js.Code.ToString();
+                }
+                return wc.ResponseHeaders.Get("Set-Cookie");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("failed." + e.Message);
+                return default;
+            }
+            
         }
     }
 }

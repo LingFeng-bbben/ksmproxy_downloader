@@ -6,10 +6,10 @@
         xmlns:local="clr-namespace:ksm_download"
         xmlns:Properties="clr-namespace:ksm_download.Properties" xmlns:System="clr-namespace:System;assembly=mscorlib" x:Class="ksm_download.MainWindow"
         mc:Ignorable="d"
-        Title="谱面下载器" Height="377" Width="829" Loaded="Window_Loaded" FontFamily="Yu Gothic UI Semilight" BorderThickness="1" BorderBrush="{Binding BorderBrush, ElementName=button}" MinWidth="595" MinHeight="350">
+        Title="谱面下载器" Height="377" Width="829" Loaded="Window_Loaded" FontFamily="Yu Gothic UI Semilight" BorderThickness="1" BorderBrush="{Binding BorderBrush, ElementName=button}" MinWidth="595" MinHeight="350" Background="Black">
     <Grid Margin="0,0,2,0">
 
-        <Image x:Name="SongImg_Copy" Margin="-10,-10,-10,-9.6" Source="{Binding Source, ElementName=SongImg}" RenderTransformOrigin="0.5,0.5" Stretch="UniformToFill">
+        <Image x:Name="SongImg_Copy" Margin="-10,-10,-10,-9.6" Source="{Binding Source, ElementName=SongImg}" RenderTransformOrigin="0.5,0.5" Stretch="UniformToFill" Opacity="0.67">
             <Image.Effect>
                 <BlurEffect Radius="20"/>
             </Image.Effect>
@@ -39,12 +39,12 @@
                 </LinearGradientBrush>
             </Button.BorderBrush>
         </Button>
-        <Label Content="歌曲列表" Margin="214,0,0,0" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="58" Foreground="White">
+        <Label Content="歌曲列表" Margin="214,0,0,0" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="58" Foreground="White" FontWeight="Bold">
             <Label.Effect>
                 <DropShadowEffect/>
             </Label.Effect>
         </Label>
-        <Label Content="日志" Margin="10,0,0,0" HorizontalAlignment="Left" Width="34" Height="26" VerticalAlignment="Top" Foreground="White">
+        <Label Content="日志" Margin="10,0,0,0" HorizontalAlignment="Left" Width="34" Height="26" VerticalAlignment="Top" Foreground="White" FontWeight="Bold">
             <Label.Effect>
                 <DropShadowEffect/>
             </Label.Effect>
@@ -153,6 +153,18 @@
                 </ControlTemplate>
             </Button.Template>
         </Button>
+        <Label x:Name="label_user" Content="GUEST" Margin="0,0,10,0" Height="26" VerticalAlignment="Top" Foreground="White" HorizontalAlignment="Right" Width="188" FlowDirection="RightToLeft" MouseDoubleClick="label_user_MouseDoubleClick">
+            <Label.Effect>
+                <DropShadowEffect/>
+            </Label.Effect>
+        </Label>
+        <StackPanel x:Name="panel_login" Margin="0" Background="#BF000000" Visibility="Collapsed">
+            <Label Content="登录" HorizontalAlignment="Center" Width="100" Foreground="White" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,60,0,0" FontSize="18"/>
+            <TextBox x:Name="textbox_usrname" Height="23" TextWrapping="Wrap" HorizontalAlignment="Center" Width="200" Margin="0,20,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <PasswordBox x:Name="textbox_password" PasswordChar="◈" Height="23" HorizontalAlignment="Center" Width="200" Margin="0,10,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <Label x:Name="label_register" Content="没有账户？点我注册" Foreground="#FFAFB2EE" HorizontalAlignment="Center" Margin="0,10,0,0" MouseDown="label_register_MouseDown"/>
+            <Button x:Name="button_login" Content="OK" Margin="0,20,0,0" Height="30" HorizontalAlignment="Center" Width="60" UseLayoutRounding="False" Click="button_login_Click"/>
+        </StackPanel>
 
 
     </Grid>

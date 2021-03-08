@@ -12,6 +12,7 @@ using System.Windows.Data;
 using System.Linq;
 using ksm_download.JsonFormats;
 using System.Windows.Media;
+using System.Threading.Tasks;
 
 namespace ksm_download
 {
@@ -61,9 +62,13 @@ namespace ksm_download
     }
     public partial class MainWindow : Window
     {
-        const string songlistAPI = "http://ksm-proxy.littlec.tunergames.com/api/songs";
-        const string getpicAPI = "http://ksm-proxy.littlec.tunergames.com/api/getJacket";
-        const string getpreviewAPI = "http://ksm-proxy.littlec.tunergames.com/api/getPreview";
+        const string songlistAPI = "https://ksm-proxy.littlec.tunergames.com/api/songs";
+        const string getpicAPI = "https://ksm-proxy.littlec.tunergames.com/api/getJacket";
+        const string getpreviewAPI = "https://ksm-proxy.littlec.tunergames.com/api/getPreview";
+        const string loginAPI = "https://ksm-proxy.littlec.tunergames.com/api/login";
+        const string usrinfoAPI = "https://ksm-proxy.littlec.tunergames.com/api/userInfo";
+        const string reqDownAPI = "https://ksm-proxy.littlec.tunergames.com/api/applyDownload?id=";
+        const string songDownloadUrl = "https://ksm-proxy.littlec.tunergames.com/download/";
         SongData sd = new SongData();//现在显示的歌曲列表(与显示列表绑定)
         SongListJson jslist = new SongListJson();//下载的列表
         int currentPage = 1;
@@ -74,16 +79,28 @@ namespace ksm_download
 
         void printLog(string a)
         {
-            log.Text += a + "\n";
+            log.Text = a + "\n"+ log.Text;
         }
 
         delegate void ProgressChange(int a);
 
         void SetProgressValue(int a) => progressBar.Value = a;
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             printLog("ksm下载器v0.4k");
+            if (File.Exists(cookiefilePath))
+            {
+                cookie = File.ReadAllText(cookiefilePath);
+                if (!await updateUsrInfo())
+                {
+                    panel_login.Visibility = Visibility.Visible;
+                }
+            }
+            else
+            {
+                panel_login.Visibility = Visibility.Visible;
+            }
             Refresh_list();
         }
 
@@ -96,7 +113,8 @@ namespace ksm_download
             button_prev.IsEnabled = false;
             Page_Box.IsEnabled = false;
             Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
-            jslist = await Download.downloadJson<SongListJson>(songlistAPI+"?page="+currentPage);
+            var jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI+"?page="+currentPage);
+            jslist = jsroot.Data;
 
             foreach(var a in jslist.Data)
             {
@@ -119,48 +137,65 @@ namespace ksm_download
             Page_Box.IsEnabled = true;
         }
 
-        delegate void stringDe(string a);
         static string songExtPath = Environment.CurrentDirectory + "/songs/ksm-download/";
         static string songDownloadPath = Environment.CurrentDirectory + "/songs/";
-        private void DownloadButton_Click(object sender, RoutedEventArgs e)
+        private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
-                Directory.CreateDirectory(songExtPath);
-                
-                //DownloadSelected();
+            Directory.CreateDirectory(songExtPath);
+            progressBar.IsIndeterminate = true;
+            await DownloadSelected();
+            progressBar.IsIndeterminate = false;
+            await updateUsrInfo();
         }
 
-        void DownloadSelected()
+        private async Task DownloadSelected()
         {
-            stringDe de = new stringDe(printLog);
             System.Collections.IList se = songlistview.SelectedItems;
             var collection = se.Cast<song>();
-            List<song> selected = collection.ToList();
-            void nmsl()
-            {
-                for (int i = 0; i < selected.Count; i++)
-                {
-                    this.Dispatcher.Invoke(de, "正在下载第"+(i+1)+"个，共"+selected.Count+"个");
-                    this.Dispatcher.Invoke(de, selected[i].name);
-                    //downloadTo("packages/" + selected[i].id + ".zip", songDownloadPath + selected[i].id + ".zip");
-                    this.Dispatcher.Invoke(de, "下载完毕");
-                    this.Dispatcher.Invoke(de, "准备解压");
-                    try
-                    {
-                        ZipFile.ExtractToDirectory(songDownloadPath + selected[i].id + ".zip", songExtPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Dispatcher.Invoke(de, "解压出现问题:" + ex.Message);
-                    }
-                    //unzip("-o songs/" + selected.id + ".zip -d songs/ksm-download");
-                    this.Dispatcher.Invoke(de, "解压完毕");
-                    System.IO.File.Delete(songDownloadPath + selected[i].id + ".zip");
-                }
-                System.Media.SystemSounds.Beep.Play();
-            }
-            Thread a = new Thread(new ThreadStart(nmsl));
+            List<song> selected = collection.ToList(); 
 
-            a.Start();
+            Dictionary<string, string> keyValuePairs = new Dictionary<string, string> { { "Cookie", cookie } };
+            for (int i = 0; i < selected.Count; i++)
+            {
+                printLog("正在下载第" + (i + 1) + "个，共" + selected.Count + "个");
+                printLog(selected[i].name);
+                printLog("请求服务器缓存...");
+                SongListJsonRoot jsroot = await Download.downloadJson<SongListJsonRoot>(reqDownAPI + selected[i].id.ToString(), keyValuePairs);
+                if (jsroot.Code == 404)
+                {
+                    printLog("歌曲不存在");
+                    continue;
+                }
+                if (jsroot.Code == 403)
+                {
+                    System.Media.SystemSounds.Exclamation.Play();
+                    MessageBox.Show("本日下载次数已用光", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                string downloadFilename = songDownloadPath + selected[i].id + ".zip";
+                printLog("正在下载");
+                if (!await Download.downloadFile(songDownloadUrl + selected[i].id.ToString(), downloadFilename )) {
+                    printLog("下载失败");
+                    continue;
+                };
+                printLog("下载完毕");
+                string extFilepath = songExtPath + selected[i].id.ToString() + "/";
+                try
+                {
+                    if (Directory.Exists(extFilepath))
+                        Directory.Delete(extFilepath, true);
+                    ZipFile.ExtractToDirectory(downloadFilename, extFilepath);
+                }
+                catch (Exception ex)
+                {
+                    printLog("解压出现问题:" + ex.Message);
+                }
+                printLog("解压完毕");
+                File.Delete(downloadFilename);
+            }
+            System.Media.SystemSounds.Beep.Play();
+
+
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -171,6 +206,7 @@ namespace ksm_download
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Process.Start("tencent://AddContact/?fromId=45&fromSubId=1&subcmd=all&uin=1323291094");
+            //打开qq窗口
         }
 
 
@@ -192,12 +228,14 @@ namespace ksm_download
                 var thesong = jslist.Data.First(o => o.Id == selected.id);
                 //请求图片
                 string filepath = String.Format("{0}{1}_{2}", imgfilePath, thesong.Id.ToString(), thesong.JacketFilename);
-                string request = String.Format("{0}?id={1}&filename={2}", getpicAPI, thesong.Id.ToString(),thesong.JacketFilename);
+                string request = String.Format("{0}?id={1}", getpicAPI, thesong.Id.ToString());
                 if (!File.Exists(filepath))
                 {
                     SongImg.Opacity = 0.5;
+                    progressBar.IsIndeterminate = true;
                     printLog("正在载图");
                     await Download.downloadFile(request, filepath);
+                    progressBar.IsIndeterminate = false;
                     SongImg.Opacity = 1;
                 }
 
@@ -328,9 +366,13 @@ namespace ksm_download
                 }
             }
         }
+
         static string previewfilePath = Environment.CurrentDirectory + "/ksmdownload/prevtmp/";
         MediaPlayer mediaPlayer = new MediaPlayer();
         bool isPlaying = false;
+        /// <summary>
+        ///    载入试听
+        /// </summary>
         private async void button_preview_Click(object sender, RoutedEventArgs e)
         {
             if (isPlaying)
@@ -347,16 +389,22 @@ namespace ksm_download
                 var thesong = jslist.Data.First(o => o.Id == selected.id);
                 //请求图片
                 string filepath = String.Format("{0}{1}_{2}", previewfilePath, thesong.Id.ToString(), "preview.mp3");
-                string request = String.Format("{0}?id={1}&filename={2}", getpreviewAPI, thesong.Id.ToString(), "preview.mp3");
+                string request = String.Format("{0}?id={1}", getpreviewAPI, thesong.Id.ToString());
+                
                 button_preview.IsEnabled = false;
+                progressBar.IsIndeterminate = true;
                 button_preview.Content = "...";
+
                 if (!File.Exists(filepath))
                 {
                     printLog("正在下载试听");
                     await Download.downloadFile(request, filepath);
                 }
+
                 button_preview.Content = "■";
+                progressBar.IsIndeterminate = false;
                 button_preview.IsEnabled = true;
+
                 mediaPlayer.Open(new Uri(filepath));
                 mediaPlayer.Play();
                 isPlaying = true;
@@ -368,6 +416,59 @@ namespace ksm_download
         {
             button_preview.Content = "▶";
             isPlaying = false;
+        }
+
+        static string cookiefilePath = Environment.CurrentDirectory + "/ksmdownload/cookie";
+        string cookie = "";
+        private async void button_login_Click(object sender, RoutedEventArgs e)
+        {
+            string usrname = textbox_usrname.Text;
+            string password = textbox_password.Password;
+            if (usrname == "" || password == "")
+            {
+                MessageBox.Show("傻逼", "傻逼", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            string sendback = await Download.login(loginAPI, usrname, password);
+            if (sendback == "403")
+            {
+                MessageBox.Show("账号或密码错误", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+                return;
+            }
+            cookie = sendback.Substring(0, 75);
+            File.WriteAllText(cookiefilePath, cookie);
+            panel_login.Visibility = Visibility.Collapsed;
+            await updateUsrInfo();
+            return;
+        }
+
+        async Task<bool> updateUsrInfo()
+        {
+            Dictionary<string, string> keyValuePairs = new Dictionary<string, string> { { "Cookie", cookie } };
+            UserJsonRoot jsonRoot = await Download.downloadJson<UserJsonRoot>(usrinfoAPI, keyValuePairs);
+            if (jsonRoot.Code != 200)
+            {
+                printLog(jsonRoot.Msg);
+                return false;
+            }
+            label_user.Content = String.Format("剩余下载次数:{0}    {1}", jsonRoot.Data.AvailableDownloadTimes, jsonRoot.Data.Usrname);
+            return true;
+        }
+
+        private void label_user_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if(MessageBox.Show("要退出登录吗", "提示", MessageBoxButton.YesNo, MessageBoxImage.Asterisk) == MessageBoxResult.Yes)
+            {
+                File.Delete(cookiefilePath);
+                cookie = "";
+                label_user.Content = "GUEST";
+                panel_login.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void label_register_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            System.Diagnostics.Process.Start("http://netedu.xauat.edu.cn/jpkc/netedu/jpkc/gdsx/homepage/5jxsd/51/513/5308/530805.htm");
         }
     }
 }
