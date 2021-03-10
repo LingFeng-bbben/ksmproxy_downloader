@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ksm_download"
         xmlns:Properties="clr-namespace:ksm_download.Properties" xmlns:System="clr-namespace:System;assembly=mscorlib" x:Class="ksm_download.MainWindow"
         mc:Ignorable="d"
-        Title="谱面下载器" Height="377" Width="829" Loaded="Window_Loaded" FontFamily="Yu Gothic UI Semilight" BorderThickness="1" BorderBrush="{Binding BorderBrush, ElementName=button}" MinWidth="595" MinHeight="350" Background="Black">
+        Title="谱面下载器" Height="483" Width="829" Loaded="Window_Loaded" FontFamily="Yu Gothic UI Semilight" BorderThickness="1" BorderBrush="{Binding BorderBrush, ElementName=button}" MinWidth="595" MinHeight="483" Background="Black">
     <Grid Margin="0,0,2,0">
 
         <Image x:Name="SongImg_Copy" Margin="-10,-10,-10,-9.6" Source="{Binding Source, ElementName=SongImg}" RenderTransformOrigin="0.5,0.5" Stretch="UniformToFill" Opacity="0.67">
@@ -16,7 +16,7 @@
         </Image>
 
 
-        <ListView x:Name="songlistview" Margin="214,24,10,46" Background="#CCFFFFFF" Foreground="#FF383838" BorderBrush="{Binding BorderBrush, ElementName=button}" SelectionChanged="songlistview_SelectionChanged" GridViewColumnHeader.Click="Sort_Click" BorderThickness="2">
+        <ListView x:Name="songlistview" Margin="214,24,10,46" Background="#CCFFFFFF" Foreground="#FF383838" BorderBrush="{Binding BorderBrush, ElementName=button}" SelectionChanged="songlistview_SelectionChanged" GridViewColumnHeader.Click="Sort_Click" BorderThickness="2" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Visible">
             <ListView.View>
                 <GridView>
 
@@ -31,7 +31,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Button x:Name="downloadButton" Content="下载" Margin="214,0,0,10" Background="White" Click="DownloadButton_Click" Height="31" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="87" BorderThickness="2">
+        <Button x:Name="downloadButton" Content="下载" Margin="214,0,0,13" Background="White" Click="DownloadButton_Click" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="87" BorderThickness="2">
             <Button.BorderBrush>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FFFD96BC" Offset="0.234"/>
@@ -44,11 +44,6 @@
                 <DropShadowEffect/>
             </Label.Effect>
         </Label>
-        <Label Content="日志" Margin="10,0,0,0" HorizontalAlignment="Left" Width="34" Height="26" VerticalAlignment="Top" Foreground="White" FontWeight="Bold">
-            <Label.Effect>
-                <DropShadowEffect/>
-            </Label.Effect>
-        </Label>
         <Button x:Name="button" Content="?" Margin="0,0,10,13" Background="White" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" Click="Button_Click_3" BorderThickness="2">
             <Button.BorderBrush>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -57,23 +52,7 @@
                 </LinearGradientBrush>
             </Button.BorderBrush>
         </Button>
-        <ScrollViewer Margin="10,24,0,213" Background="#7FFFFFFF"  VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="199" BorderThickness="2" PanningMode="VerticalOnly">
-            <ScrollViewer.BorderBrush>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
-                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
-                </LinearGradientBrush>
-            </ScrollViewer.BorderBrush>
-            <TextBlock x:Name="log" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="189" Margin="5,5,0,5"/>
-        </ScrollViewer>
-        <Button x:Name="button1" Content="////////" Margin="44,10,0,0" Background="White" FontSize="6" Click="Button_Click_1" Height="9" VerticalAlignment="Top" HorizontalAlignment="Left" Width="27">
-            <Button.BorderBrush>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
-                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
-                </LinearGradientBrush>
-            </Button.BorderBrush>
-        </Button>
+        <TextBlock x:Name="log" TextWrapping="Wrap" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="199" Margin="9,0,0,13" Background="#8EFFFFFF" Text="我操" Height="21" Padding="5,3,5,5"/>
         <ProgressBar x:Name="progressBar" Margin="-1,0,-3,-1" Background="#CCFFFFFF" Value="1000" Height="6" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Foreground="#FF4B4D57">
             <ProgressBar.RenderTransform>
                 <TransformGroup>
@@ -90,8 +69,8 @@
                 </LinearGradientBrush>
             </ProgressBar.BorderBrush>
         </ProgressBar>
-        <Image x:Name="SongImg" Margin="10,0,0,10" Source="nowprinting3.jpg" Stretch="UniformToFill" HorizontalAlignment="Left" Width="199" Height="198" VerticalAlignment="Bottom"/>
-        <Rectangle HorizontalAlignment="Left" Margin="10,0,0,10" Width="199" StrokeThickness="2" Height="198" VerticalAlignment="Bottom">
+        <Image x:Name="SongImg" Margin="9,0,0,46" Source="nowprinting3.jpg" Stretch="UniformToFill" HorizontalAlignment="Left" Width="199" Height="198" VerticalAlignment="Bottom"/>
+        <Rectangle HorizontalAlignment="Left" Margin="9,0,0,46" Width="199" StrokeThickness="2" Height="198" VerticalAlignment="Bottom">
             <Rectangle.Stroke>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FFFD96BC" Offset="0.234"/>
@@ -107,7 +86,7 @@
                 </LinearGradientBrush>
             </Button.BorderBrush>
         </Button>
-        <TextBox x:Name="SearchBox" Height="21" Margin="326,0,153,13" TextWrapping="Wrap" Text="Search" VerticalAlignment="Bottom" TextChanged="TextBox_TextChanged" Background="#F8FFFFFF" GotFocus="SearchBox_GotFocus" VerticalContentAlignment="Center" LostFocus="SearchBox_LostFocus">
+        <TextBox x:Name="SearchBox" Margin="10,24,0,0" TextWrapping="Wrap" Text="Search" TextChanged="TextBox_TextChanged" Background="#F8FFFFFF" GotFocus="SearchBox_GotFocus" VerticalContentAlignment="Center" LostFocus="SearchBox_LostFocus" Padding="2,0,0,0" Height="21" VerticalAlignment="Top" HorizontalAlignment="Left" Width="198">
             <TextBox.BorderBrush>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FFFD96BC" Offset="0.234"/>
@@ -115,31 +94,7 @@
                 </LinearGradientBrush>
             </TextBox.BorderBrush>
         </TextBox>
-        <Button x:Name="button_prev" Content="&lt;" Margin="0,0,108,13" Background="White" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" BorderThickness="2" RenderTransformOrigin="-0.127,0.476" FontWeight="Bold" Click="button_prev_Click">
-            <Button.BorderBrush>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
-                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
-                </LinearGradientBrush>
-            </Button.BorderBrush>
-        </Button>
-        <Button x:Name="button_next" Content="&gt;" Margin="0,0,50,13" Background="White" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" BorderThickness="2" FontWeight="Bold" Click="button_next_Click">
-            <Button.BorderBrush>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
-                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
-                </LinearGradientBrush>
-            </Button.BorderBrush>
-        </Button>
-        <TextBox x:Name="Page_Box" Height="21" Margin="0,0,76,13" TextWrapping="Wrap" Text="1" VerticalAlignment="Bottom" TextChanged="Page_Box_TextChanged" Background="#F8FFFFFF" HorizontalAlignment="Right" Width="27" VerticalContentAlignment="Center" TextAlignment="Center">
-            <TextBox.BorderBrush>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
-                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
-                </LinearGradientBrush>
-            </TextBox.BorderBrush>
-        </TextBox>
-        <Button x:Name="button_preview" Content="▶" HorizontalAlignment="Left" Width="35" Margin="10,0,0,10" BorderBrush="{x:Null}" Background="#B2000000" Foreground="White" Height="35" VerticalAlignment="Bottom" Click="button_preview_Click">
+        <Button x:Name="button_preview" Content="▶" HorizontalAlignment="Left" Width="35" Margin="9,0,0,46" BorderBrush="{x:Null}" Background="#B2000000" Foreground="White" Height="35" VerticalAlignment="Bottom" Click="button_preview_Click">
             <Button.Template>
                 <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
@@ -166,6 +121,11 @@
             <Button x:Name="button_login" Content="OK" Margin="0,20,0,0" Height="30" HorizontalAlignment="Center" Width="60" UseLayoutRounding="False" Click="button_login_Click"/>
             <Label x:Name="label_skip" Content="跳过" Foreground="White" HorizontalAlignment="Center" Margin="349.5,10,349.5,0" MouseDown="label_skip_MouseDown"/>
         </StackPanel>
+        <Label Content="搜索" Margin="9,1,0,0" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="58" Foreground="White" FontWeight="Bold">
+            <Label.Effect>
+                <DropShadowEffect/>
+            </Label.Effect>
+        </Label>
 
 
     </Grid>

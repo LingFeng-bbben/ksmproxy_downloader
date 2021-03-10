@@ -72,7 +72,6 @@ namespace ksm_download
         const string songDownloadUrl = "https://ksm-proxy.littlec.tunergames.com/download/";
         SongData sd = new SongData();//现在显示的歌曲列表(与显示列表绑定)
         SongListJson jslist = new SongListJson();//下载的列表
-        int currentPage = 1;
         int maxPage = 555;
         public MainWindow()
         {
@@ -87,6 +86,8 @@ namespace ksm_download
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             printLog("ksm下载器v0.4k");
+            Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
+
             timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
             if (File.Exists(cookiefilePath))
             {
@@ -107,22 +108,20 @@ namespace ksm_download
             Refresh_list();
         }
 
-        
-        private async void Refresh_list()
+        int currentPage = 1;
+        private async void Refresh_list(int page=1,bool clear = false)
         {
-            printLog(String.Format("正在获取歌曲列表,第{0}页",currentPage));
-            sd = new SongData();//清空列表
-            button_next.IsEnabled = false;
-            button_prev.IsEnabled = false;
-            Page_Box.IsEnabled = false;
-            Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
+            printLog(String.Format("正在获取歌曲列表,第{0}页",page));
+            var sdnew = new SongData();//清空列表
+            if (!clear) sdnew.songslist.AddRange(sd.songslist);
+
             SongListJsonRoot jsroot = new SongListJsonRoot();
             if (SearchBox.Text != "Search" && SearchBox.Text != "")
             {
-                jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI +"?songs="+SearchBox.Text+ "&page=" + currentPage);
+                jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI +"?songs="+SearchBox.Text+ "&page=" + page);
             }
             else {
-                jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI + "?page=" + currentPage);
+                jsroot = await Download.downloadJson<SongListJsonRoot>(songlistAPI + "?page=" + page);
             }
             
 
@@ -140,15 +139,25 @@ namespace ksm_download
                         else if (chart.Effector != charters) charters = chart.Effector;
                     }
                     song thissong = new song(a.Id.ToString(), a.Title, levels, a.Artist, charters);
-                    sd.songslist.Add(thissong);
+                    sdnew.songslist.Add(thissong);
                 }
             }
+
+
+            if (sdnew.songslist.Exists(o => o.name == "LOAD MORE"))
+            {
+                sdnew.songslist.Remove(sdnew.songslist.Find(o => o.name == "LOAD MORE"));
+            }
+            if (currentPage + 1 < maxPage)
+            {
+                song dummy = new song(Guid.Empty.ToString(), "LOAD MORE", new string[4] { "", "", "", "" }, "", "");
+                sdnew.songslist.Add(dummy);
+            }
+
             maxPage = jslist.Meta.LastPage;
+            sd = sdnew;
             songlistview.ItemsSource = sd.songslist;
             printLog("获取歌曲列表完成");
-            button_next.IsEnabled = true;
-            button_prev.IsEnabled = true;
-            Page_Box.IsEnabled = true;
         }
 
         static string songExtPath = Environment.CurrentDirectory + "/songs/ksm-download/";
@@ -171,8 +180,6 @@ namespace ksm_download
             Dictionary<string, string> keyValuePairs = new Dictionary<string, string> { { "Cookie", cookie } };
             for (int i = 0; i < selected.Count; i++)
             {
-                printLog("正在下载第" + (i + 1) + "个，共" + selected.Count + "个");
-                printLog(selected[i].name);
                 if (await Download.downloadText(cachestaAPI + selected[i].id.ToString()) == "0")
                 {
                     if (cookie != "")
@@ -181,7 +188,7 @@ namespace ksm_download
                         SongListJsonRoot jsroot = await Download.downloadJson<SongListJsonRoot>(reqDownAPI + selected[i].id.ToString(), keyValuePairs);
                         if (jsroot.Code == 404)
                         {
-                            printLog("歌曲不存在");
+                            MessageBox.Show("歌曲不存在", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
                             continue;
                         }
                         if (jsroot.Code == 403)
@@ -193,16 +200,16 @@ namespace ksm_download
                     }
                     else
                     {
-                        MessageBox.Show("本歌曲还未缓存，请登录请求缓存", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("下载"+ selected[i].name+"出现问题\n本歌曲还未缓存，请登录请求缓存", "【悲报】", MessageBoxButton.OK, MessageBoxImage.Error);
                         panel_login.Visibility = Visibility.Visible;
                         return;
                     }
                 }
                 string downloadFilename = songDownloadPath + selected[i].id + ".zip";
-                printLog("正在下载");
+                printLog(String.Format("正在下载({0}/{1}):{2}",(i + 1),selected.Count, selected[i].name));
                 if (!await Download.downloadFile(songDownloadUrl + selected[i].id.ToString(), downloadFilename )) {
                     printLog("下载失败");
-                    continue;
+                    return;
                 };
                 printLog("下载完毕");
                 string extFilepath = songExtPath + selected[i].id.ToString() + "/";
@@ -215,6 +222,7 @@ namespace ksm_download
                 catch (Exception ex)
                 {
                     printLog("解压出现问题:" + ex.Message);
+                    return;
                 }
                 printLog("解压完毕");
                 File.Delete(downloadFilename);
@@ -248,13 +256,20 @@ namespace ksm_download
             button_preview.Content = "▶";
 
             song selected = (song)songlistview.SelectedItem;
+
             if (selected != null)
             {
+                if (selected.name == "LOAD MORE")
+                {
+                    currentPage++;
+                    Refresh_list(currentPage);
+                    return;
+                }
+
                 Directory.CreateDirectory(imgfilePath);
-                var thesong = jslist.Data.First(o => o.Id == selected.id);
                 //请求图片
-                string filepath = String.Format("{0}{1}_{2}", imgfilePath, thesong.Id.ToString(), thesong.JacketFilename);
-                string request = String.Format("{0}?id={1}", getpicAPI, thesong.Id.ToString());
+                string filepath = String.Format("{0}{1}", imgfilePath, selected.id);
+                string request = String.Format("{0}?id={1}", getpicAPI, selected.id);
                 if (!File.Exists(filepath))
                 {
                     SongImg.Opacity = 0.5;
@@ -270,6 +285,7 @@ namespace ksm_download
                 bmp.UriSource = new Uri(filepath, UriKind.Absolute);//设置图片路径
                 bmp.EndInit();//结束初始化
                 SongImg.Source = bmp;
+                printLog("");
             }
 
         }
@@ -277,7 +293,8 @@ namespace ksm_download
         
         private void button1_Copy_Click(object sender, RoutedEventArgs e)
         {
-            Refresh_list();
+            currentPage = 1;
+            Refresh_list(1,true);
         }
 
         //排序
@@ -354,7 +371,7 @@ namespace ksm_download
                 if (SearchBox.Text != "Search")
                 {
                     currentPage = 1;
-                    Refresh_list();
+                    Refresh_list(1,true);
                 }
             }));
             
@@ -377,48 +394,6 @@ namespace ksm_download
             
         }
 
-        private void button_next_Click(object sender, RoutedEventArgs e)
-        {
-            int page = currentPage;
-            if (page >= maxPage) page = maxPage;
-            else page++;
-            Page_Box.Text = page.ToString();
-        }
-
-        private void button_prev_Click(object sender, RoutedEventArgs e)
-        {
-            int page = currentPage;
-            if (page <= 1) page = 1;
-            else page--;
-            Page_Box.Text = page.ToString();
-        }
-
-        private void Page_Box_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            int page = 1;
-            try
-            {
-                page = int.Parse(Page_Box.Text);
-                if (page != currentPage)
-                {
-                    if (page <= 1) currentPage = 1;
-                    else if (page >= maxPage) currentPage = maxPage;
-                    else currentPage = page;
-
-                    Refresh_list();
-                }
-            }
-            catch
-            {
-                Page_Box.Text = "1";
-                if (currentPage != 1)
-                {
-                    currentPage = 1;
-                    Refresh_list();
-                }
-            }
-        }
-
         static string previewfilePath = Environment.CurrentDirectory + "/ksmdownload/prevtmp/";
         MediaPlayer mediaPlayer = new MediaPlayer();
         bool isPlaying = false;
@@ -438,10 +413,9 @@ namespace ksm_download
             if (selected != null)
             {
                 Directory.CreateDirectory(previewfilePath);
-                var thesong = jslist.Data.First(o => o.Id == selected.id);
                 //请求图片
-                string filepath = String.Format("{0}{1}_{2}", previewfilePath, thesong.Id.ToString(), "preview.mp3");
-                string request = String.Format("{0}?id={1}", getpreviewAPI, thesong.Id.ToString());
+                string filepath = String.Format("{0}{1}_{2}", previewfilePath, selected.id, "preview.mp3");
+                string request = String.Format("{0}?id={1}", getpreviewAPI, selected.id);
                 
                 button_preview.IsEnabled = false;
                 progressBar.IsIndeterminate = true;
@@ -461,6 +435,7 @@ namespace ksm_download
                 mediaPlayer.Play();
                 isPlaying = true;
                 mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
+                printLog("");
             }
         }
 
@@ -496,11 +471,12 @@ namespace ksm_download
 
         async Task<bool> updateUsrInfo()
         {
+            if (cookie == "") return false;
             Dictionary<string, string> keyValuePairs = new Dictionary<string, string> { { "Cookie", cookie } };
             UserJsonRoot jsonRoot = await Download.downloadJson<UserJsonRoot>(usrinfoAPI, keyValuePairs);
             if (jsonRoot.Code != 200)
             {
-                printLog(jsonRoot.Msg);
+                printLog("获取用户信息失败:"+jsonRoot.Msg);
                 return false;
             }
             if (jsonRoot.Data.AvailableDownloadTimes == 2147483646)
