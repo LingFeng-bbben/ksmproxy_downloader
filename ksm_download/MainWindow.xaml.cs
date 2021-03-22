@@ -149,6 +149,7 @@ namespace ksm_download
                 }
             }
 
+            maxPage = jslist.Meta.LastPage;
 
             if (sdnew.songslist.Exists(o => o.name == "LOAD MORE"))
             {
@@ -160,7 +161,7 @@ namespace ksm_download
                 sdnew.songslist.Add(dummy);
             }
 
-            maxPage = jslist.Meta.LastPage;
+            
             sd = sdnew;
             songlistview.ItemsSource = sd.songslist;
             CheckDownloaded();
