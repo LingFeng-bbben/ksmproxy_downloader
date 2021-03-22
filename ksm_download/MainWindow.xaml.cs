@@ -88,6 +88,7 @@ namespace ksm_download
         {
             printLog("ksm下载器v0.4k");
             Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
+            Directory.CreateDirectory(songExtPath);
 
             timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
             if (File.Exists(cookiefilePath))
@@ -538,6 +539,9 @@ namespace ksm_download
             panel_login.Visibility = Visibility.Collapsed;
         }
 
-        
+        private void button_Money_Click(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://afdian.net/@little_c");
+        }
     }
 }

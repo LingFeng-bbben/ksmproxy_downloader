@@ -123,6 +123,14 @@
                 <DropShadowEffect/>
             </Label.Effect>
         </Label>
+        <Button x:Name="button_Money" Content="￥" Margin="0,0,36,13" Background="#FF2B2B2B" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="21" Click="button_Money_Click" BorderThickness="2" Foreground="White">
+            <Button.BorderBrush>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FFFD96BC" Offset="0.234"/>
+                    <GradientStop Color="#FF90F3E5" Offset="0.951"/>
+                </LinearGradientBrush>
+            </Button.BorderBrush>
+        </Button>
         <StackPanel x:Name="panel_login" Margin="0" Background="#BF000000" Visibility="Collapsed">
             <Label Content="登录" HorizontalAlignment="Center" Width="100" Foreground="White" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,60,0,0" FontSize="18"/>
             <TextBox x:Name="textbox_usrname" Height="23" TextWrapping="Wrap" HorizontalAlignment="Center" Width="200" Margin="0,20,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
