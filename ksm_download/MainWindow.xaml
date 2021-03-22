@@ -113,14 +113,6 @@
                 <DropShadowEffect/>
             </Label.Effect>
         </Label>
-        <StackPanel x:Name="panel_login" Margin="0" Background="#BF000000" Visibility="Collapsed">
-            <Label Content="登录" HorizontalAlignment="Center" Width="100" Foreground="White" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,60,0,0" FontSize="18"/>
-            <TextBox x:Name="textbox_usrname" Height="23" TextWrapping="Wrap" HorizontalAlignment="Center" Width="200" Margin="0,20,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-            <PasswordBox x:Name="textbox_password" PasswordChar="◈" Height="23" HorizontalAlignment="Center" Width="200" Margin="0,10,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-            <Label x:Name="label_register" Content="没有账户？点我注册" Foreground="#FFAFB2EE" HorizontalAlignment="Center" Margin="0,10,0,0" MouseDown="label_register_MouseDown"/>
-            <Button x:Name="button_login" Content="OK" Margin="0,20,0,0" Height="30" HorizontalAlignment="Center" Width="60" UseLayoutRounding="False" Click="button_login_Click"/>
-            <Label x:Name="label_skip" Content="跳过" Foreground="White" HorizontalAlignment="Center" Margin="349.5,10,349.5,0" MouseDown="label_skip_MouseDown"/>
-        </StackPanel>
         <Label Content="搜索" Margin="9,1,0,0" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="58" Foreground="White" FontWeight="Bold">
             <Label.Effect>
                 <DropShadowEffect/>
@@ -131,6 +123,14 @@
                 <DropShadowEffect/>
             </Label.Effect>
         </Label>
+        <StackPanel x:Name="panel_login" Margin="0" Background="#BF000000" Visibility="Collapsed">
+            <Label Content="登录" HorizontalAlignment="Center" Width="100" Foreground="White" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,60,0,0" FontSize="18"/>
+            <TextBox x:Name="textbox_usrname" Height="23" TextWrapping="Wrap" HorizontalAlignment="Center" Width="200" Margin="0,20,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <PasswordBox x:Name="textbox_password" PasswordChar="◈" Height="23" HorizontalAlignment="Center" Width="200" Margin="0,10,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <Label x:Name="label_register" Content="没有账户？点我注册" Foreground="#FFAFB2EE" HorizontalAlignment="Center" Margin="0,10,0,0" MouseDown="label_register_MouseDown"/>
+            <Button x:Name="button_login" Content="OK" Margin="0,20,0,0" Height="30" HorizontalAlignment="Center" Width="60" UseLayoutRounding="False" Click="button_login_Click"/>
+            <Label x:Name="label_skip" Content="跳过" Foreground="White" HorizontalAlignment="Center" Margin="349.5,10,349.5,0" MouseDown="label_skip_MouseDown"/>
+        </StackPanel>
 
 
     </Grid>
