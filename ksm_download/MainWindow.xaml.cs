@@ -22,6 +22,7 @@ namespace ksm_download
     public class song
     {
         public Guid id { get; set; }
+        public string downState { get; set; }
         public string name { get; set; }
         public string[] levels { get; set; }
         public string artist { get; set; }
@@ -46,7 +47,7 @@ namespace ksm_download
             } 
             set
             {
-                OnPropertyChanged("id");
+                OnPropertyChanged("已下载");
                 _songslist = songslist;
             }
                                         
@@ -62,14 +63,14 @@ namespace ksm_download
     }
     public partial class MainWindow : Window
     {
-        const string songlistAPI = "https://ksm-proxy.littlec.tunergames.com/api/songs";
-        const string getpicAPI = "https://ksm-proxy.littlec.tunergames.com/api/getJacket";
-        const string getpreviewAPI = "https://ksm-proxy.littlec.tunergames.com/api/getPreview";
-        const string loginAPI = "https://ksm-proxy.littlec.tunergames.com/api/login";
-        const string usrinfoAPI = "https://ksm-proxy.littlec.tunergames.com/api/userInfo";
-        const string reqDownAPI = "https://ksm-proxy.littlec.tunergames.com/api/applyDownload?id=";
-        const string cachestaAPI = "https://ksm-proxy.littlec.tunergames.com/api/getCacheStatus?id=";
-        const string songDownloadUrl = "https://ksm-proxy.littlec.tunergames.com/download/";
+        const string songlistAPI = "https://ksm-api.littlec.xyz:10443/api/songs";
+        const string getpicAPI = "https://ksm-api.littlec.xyz:10443/api/getJacket";
+        const string getpreviewAPI = "https://ksm-api.littlec.xyz:10443/api/getPreview";
+        const string loginAPI = "https://ksm-api.littlec.xyz:10443/api/login";
+        const string usrinfoAPI = "https://ksm-api.littlec.xyz:10443/api/userInfo";
+        const string reqDownAPI = "https://ksm-api.littlec.xyz:10443/api/applyDownload?id=";
+        const string cachestaAPI = "https://ksm-api.littlec.xyz:10443/api/getCacheStatus?id=";
+        const string songDownloadUrl = "https://ksm-api.littlec.xyz:10443/download/";
         SongData sd = new SongData();//现在显示的歌曲列表(与显示列表绑定)
         SongListJson jslist = new SongListJson();//下载的列表
         int maxPage = 555;
@@ -139,6 +140,10 @@ namespace ksm_download
                         else if (chart.Effector != charters) charters = chart.Effector;
                     }
                     song thissong = new song(a.Id.ToString(), a.Title, levels, a.Artist, charters);
+                    if(await Download.downloadText(cachestaAPI + a.Id) == "1")
+                    {
+                        thissong.downState = "○";//已缓存
+                    }
                     sdnew.songslist.Add(thissong);
                 }
             }
@@ -157,6 +162,7 @@ namespace ksm_download
             maxPage = jslist.Meta.LastPage;
             sd = sdnew;
             songlistview.ItemsSource = sd.songslist;
+            CheckDownloaded();
             printLog("获取歌曲列表完成");
         }
 
@@ -167,6 +173,8 @@ namespace ksm_download
             Directory.CreateDirectory(songExtPath);
             progressBar.IsIndeterminate = true;
             await DownloadSelected();
+            System.Media.SystemSounds.Beep.Play();
+            CheckDownloaded();
             progressBar.IsIndeterminate = false;
             await updateUsrInfo();
         }
@@ -227,15 +235,26 @@ namespace ksm_download
                 printLog("解压完毕");
                 File.Delete(downloadFilename);
             }
-            System.Media.SystemSounds.Beep.Play();
-
-
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void CheckDownloaded()
         {
-            log.Text = "";
-            //清空log
+            DirectoryInfo dirinfo = new DirectoryInfo(songExtPath);
+            List<string> ids = new List<string>();
+            foreach(var a in dirinfo.GetDirectories())
+            {
+                ids.Add(a.Name);
+            }
+            SongData newList = new SongData();
+            newList.songslist.AddRange(sd.songslist);
+            foreach(var a in newList.songslist)
+            {
+                if (ids.Exists(o => o == a.id.ToString())){
+                    a.downState = "◉";
+                }
+            }
+            sd = newList;
+            songlistview.ItemsSource = sd.songslist;
         }
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
@@ -420,7 +439,7 @@ namespace ksm_download
                 button_preview.IsEnabled = false;
                 progressBar.IsIndeterminate = true;
                 button_preview.Content = "...";
-
+                
                 if (!File.Exists(filepath))
                 {
                     printLog("正在下载试听");
@@ -509,7 +528,7 @@ namespace ksm_download
 
         private void label_register_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            System.Diagnostics.Process.Start("http://netedu.xauat.edu.cn/jpkc/netedu/jpkc/gdsx/homepage/5jxsd/51/513/5308/530805.htm");
+            System.Diagnostics.Process.Start("https://ksm.littlec.xyz/register");
         }
 
         private void label_skip_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
