@@ -13,56 +13,15 @@ using System.Linq;
 using ksm_download.JsonFormats;
 using System.Windows.Media;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace ksm_download
 {
-    /// <summary>
-    /// 和listview绑定的类
-    /// </summary>
-    public class song
-    {
-        public Guid id { get; set; }
-        public string downState { get; set; }
-        public string name { get; set; }
-        public string[] levels { get; set; }
-        public string artist { get; set; }
-        public string charter { get; set; }
-        public song(string _id, string _name, string[] _lv, string _art,string _charter)
-        {
-            id = new Guid(_id);
-            name = _name;
-            artist = _art;
-            levels = _lv;
-            charter = _charter;
-        }
-    }
 
-    public class SongData:INotifyPropertyChanged
-    {
-        List<song> _songslist = new List<song>();
-        public List<song> songslist { 
-            get 
-            {
-                return _songslist;
-            } 
-            set
-            {
-                OnPropertyChanged("已下载");
-                _songslist = songslist;
-            }
-                                        
-        }
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-            }
-        }
-    }
     public partial class MainWindow : Window
     {
+        const string updateAPI = "https://ksm-fanmade.oss-cn-shanghai.aliyuncs.com/update.json";
+        const string updateFile = "https://ksm-fanmade.oss-cn-shanghai.aliyuncs.com/ksmproxy-downloader.zip";
         const string songlistAPI = "https://ksm-api.littlec.xyz:10443/api/songs";
         const string getpicAPI = "https://ksm-api.littlec.xyz:10443/api/getJacket";
         const string getpreviewAPI = "https://ksm-api.littlec.xyz:10443/api/getPreview";
@@ -71,9 +30,30 @@ namespace ksm_download
         const string reqDownAPI = "https://ksm-api.littlec.xyz:10443/api/applyDownload?id=";
         const string cachestaAPI = "https://ksm-api.littlec.xyz:10443/api/getCacheStatus?id=";
         const string songDownloadUrl = "https://ksm-api.littlec.xyz:10443/download/";
+
+        static string ksmPath = Environment.CurrentDirectory + "/ksmdownload";
+        static string songExtPath = Environment.CurrentDirectory + "/songs/ksm-download/";
+        static string songDownloadPath = Environment.CurrentDirectory + "/songs/";
+        static string imgfilePath = Environment.CurrentDirectory + "/ksmdownload/imgtmp/";
+        static string previewfilePath = Environment.CurrentDirectory + "/ksmdownload/prevtmp/";
+        static string cookiefilePath = Environment.CurrentDirectory + "/ksmdownload/cookie";
+
+        const float currentVersion = 0.5f; 
+
+        string cookie = "";
+        int currentPage = 1;
+        int maxPage = 555;
+        bool isPlaying = false;
+
         SongData sd = new SongData();//现在显示的歌曲列表(与显示列表绑定)
         SongListJson jslist = new SongListJson();//下载的列表
-        int maxPage = 555;
+
+        System.Timers.Timer timer = new System.Timers.Timer(1000);
+        MediaPlayer mediaPlayer = new MediaPlayer();
+
+        private ListSortDirection _sortDirection;
+        private GridViewColumnHeader _sortColumn;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -86,8 +66,9 @@ namespace ksm_download
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            printLog("ksm下载器v0.4k");
-            Directory.CreateDirectory(Environment.CurrentDirectory + "/ksmdownload");
+            await CheckUpdate();
+
+            Directory.CreateDirectory(ksmPath);
             Directory.CreateDirectory(songExtPath);
 
             timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
@@ -110,7 +91,36 @@ namespace ksm_download
             Refresh_list();
         }
 
-        int currentPage = 1;
+        private async Task CheckUpdate()
+        {
+            printLog("检查更新...");
+
+            DirectoryInfo dir = new DirectoryInfo(Environment.CurrentDirectory);
+            foreach(var a in dir.GetFiles())
+            {
+                if (a.Name.EndsWith(".old"))
+                    a.Delete();
+            }
+
+            UpdateJson json = await Download.downloadJson<UpdateJson>(updateAPI);
+            if (json.Version > currentVersion)
+            {
+                MessageBox.Show("即将更新到版本" + json.Version + ":\n" + json.Info, "更新");
+                string zippath = ksmPath + "/new.zip";
+                await Download.downloadFile(updateFile, zippath);
+
+                ZipArchive arc = ZipFile.OpenRead(zippath);
+                foreach(var a in arc.Entries)
+                {
+                    if (File.Exists(a.Name))
+                        File.Move(a.Name, a.Name + ".old");
+                }
+                ZipFile.ExtractToDirectory(zippath, Environment.CurrentDirectory);
+                Process.Start("ksm_download.exe");
+                Application.Current.Shutdown();
+            }
+        }
+
         private async void Refresh_list(int page=1,bool clear = false)
         {
             printLog(String.Format("正在获取歌曲列表,第{0}页",page));
@@ -168,8 +178,6 @@ namespace ksm_download
             printLog("获取歌曲列表完成");
         }
 
-        static string songExtPath = Environment.CurrentDirectory + "/songs/ksm-download/";
-        static string songDownloadPath = Environment.CurrentDirectory + "/songs/";
         private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             Directory.CreateDirectory(songExtPath);
@@ -264,9 +272,6 @@ namespace ksm_download
             //打开qq窗口
         }
 
-
-
-        static string imgfilePath = Environment.CurrentDirectory + "/ksmdownload/imgtmp/";
         /// <summary>
         /// 载入图片
         /// </summary>
@@ -311,7 +316,6 @@ namespace ksm_download
 
         }
 
-        
         private void button1_Copy_Click(object sender, RoutedEventArgs e)
         {
             currentPage = 1;
@@ -319,8 +323,6 @@ namespace ksm_download
         }
 
         //排序
-        private ListSortDirection _sortDirection;
-        private GridViewColumnHeader _sortColumn;
         private void Sort_Click(object sender, RoutedEventArgs e)
         {
             GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
@@ -377,7 +379,6 @@ namespace ksm_download
         }
 
         //搜索
-        System.Timers.Timer timer = new System.Timers.Timer(1000);
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             timer.Stop();
@@ -415,9 +416,6 @@ namespace ksm_download
             
         }
 
-        static string previewfilePath = Environment.CurrentDirectory + "/ksmdownload/prevtmp/";
-        MediaPlayer mediaPlayer = new MediaPlayer();
-        bool isPlaying = false;
         /// <summary>
         ///    载入试听
         /// </summary>
@@ -466,8 +464,6 @@ namespace ksm_download
             isPlaying = false;
         }
 
-        static string cookiefilePath = Environment.CurrentDirectory + "/ksmdownload/cookie";
-        string cookie = "";
         private async void button_login_Click(object sender, RoutedEventArgs e)
         {
             string usrname = textbox_usrname.Text;
