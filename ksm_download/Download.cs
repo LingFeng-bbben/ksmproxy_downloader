@@ -69,12 +69,12 @@ namespace ksm_download
             }
         }
 
-        public static async Task<string> login(string url, string usrname,string password)
+        public static async Task<string> login(string url, string username,string password)
         {
             WebClient wc = new WebClient();
             try
             {
-                string jsondata = JsonConvert.SerializeObject(new LoginJson(usrname, password));
+                string jsondata = JsonConvert.SerializeObject(new LoginJson(username, password));
                 byte[] buffer = Encoding.UTF8.GetBytes(jsondata);
                 byte[] data = await wc.UploadDataTaskAsync(url, "POST", buffer);
                 string text = Encoding.UTF8.GetString(data);
