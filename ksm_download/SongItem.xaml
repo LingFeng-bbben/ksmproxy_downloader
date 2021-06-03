@@ -1,47 +1,58 @@
 ﻿<UserControl x:Class="ksm_download.SongItem"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ksm_download"
-             mc:Ignorable="d" Height="300" Width="250"
-             
+             mc:Ignorable="d" Height="200" Width="330"
+
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-            TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-            TextElement.FontWeight="Regular"
-            TextElement.FontSize="13"
-            TextOptions.TextFormattingMode="Ideal"
-            TextOptions.TextRenderingMode="Auto"
-            Background="{DynamicResource MaterialDesignPaper}"
-            FontFamily="{DynamicResource MaterialDesignFont}">
-    <materialDesign:Card Initialized="Card_Initialized">
+             TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+             TextElement.FontWeight="Regular"
+             TextElement.FontSize="13"
+             TextOptions.TextFormattingMode="Ideal"
+             TextOptions.TextRenderingMode="Auto"
+             Background="{DynamicResource MaterialDesignPaper}"
+             FontFamily="{DynamicResource MaterialDesignFont}"
+             
+             Margin="10">
+    <materialDesign:Card>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="7*"></RowDefinition>
-                <RowDefinition Height="3*"></RowDefinition>
+                <RowDefinition Height="6*"></RowDefinition>
+                <RowDefinition Height="4*"></RowDefinition>
             </Grid.RowDefinitions>
 
-            <Image Grid.Row="0" x:Name="Cover"></Image>
-            <Border Grid.Row="0" MouseEnter="OverPreview" x:Name="Previewer" Background="#BF000000">
+            <Image Grid.Row="0" x:Name="Cover" Source="nowprinting3.jpg" Stretch="UniformToFill"/>
+            <Border Grid.Row="0" MouseEnter="OverPreview" MouseLeave="LeavePreview" x:Name="Previewer" Background="#BF000000" Opacity="0">
                 <Button Style="{DynamicResource MaterialDesignFlatButton}"
                         Height="120" Width="120"
                         VerticalAlignment="Center"
-                        HorizontalAlignment="Center" Click="DoPreview" >
+                        HorizontalAlignment="Center" Click="DoPreview">
                     <materialDesign:PackIcon Kind="Play" Foreground="#DDFFFFFF" x:Name="Icon"
-                                         VerticalAlignment="Center"
-                                         HorizontalAlignment="Center" 
-                                         Height="120"
-                                         Width="120"></materialDesign:PackIcon>
-                    </Button>
+                                             VerticalAlignment="Center"
+                                             HorizontalAlignment="Center"
+                                             Height="120"
+                                             Width="120">
+                    </materialDesign:PackIcon>
+                </Button>
             </Border>
-            <Separator Grid.Row="0" VerticalAlignment="Bottom"></Separator>
+            <ProgressBar x:Name="DownloadProgress"
+                         Grid.Row="1"
+                         VerticalAlignment="Top" />
             <Border Grid.Row="1" Padding="10">
                 <Grid>
                     <StackPanel Orientation="Vertical" Margin="0,0,71,0" VerticalAlignment="Center">
-                        <TextBlock FontWeight="ExtraBlack" FontSize="24" TextWrapping="Wrap">曲名</TextBlock>
-                        <TextBlock FontWeight="ExtraBlack" FontSize="14" TextWrapping="Wrap" Foreground="{DynamicResource MaterialDesignBodyLight}">艺术家</TextBlock>
+                        <TextBlock x:Name="TitleBlock" 
+                                   FontWeight="ExtraBlack" FontSize="20" TextWrapping="Wrap">曲名</TextBlock>
+                        <TextBlock x:Name="ArtistBlock"
+                                   FontWeight="ExtraBlack" FontSize="10" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MaterialDesignBodyLight}">
+                            艺术家
+                        </TextBlock>
                     </StackPanel>
-                    <Button Style="{DynamicResource MaterialDesignFloatingActionButton}" VerticalAlignment="Center" HorizontalAlignment="Right" Click="DoDownload">
+                    <Button x:Name="ButtonDownload" Style="{DynamicResource MaterialDesignFloatingActionButton}" VerticalAlignment="Center"
+                            HorizontalAlignment="Right" Click="DoDownload">
                         <materialDesign:PackIcon Kind="Download" Width="32" Height="32"></materialDesign:PackIcon>
                     </Button>
                 </Grid>

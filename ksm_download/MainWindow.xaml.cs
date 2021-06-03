@@ -47,18 +47,15 @@ namespace ksm_download
         public static int maxPage = 555;
         public static bool isPlaying = false;
 
-        ObservableCollection<SongItem> sd = new ObservableCollection<SongItem>();//现在显示的歌曲列表(与显示列表绑定)
-        SongListJson jslist = new SongListJson();//下载的列表
+        public static ObservableCollection<SongItem> SongsCollection = new ObservableCollection<SongItem>();//现在显示的歌曲列表(与显示列表绑定)
+        public SongListJson jslist = new SongListJson();//下载的列表
 
-        System.Timers.Timer timer = new System.Timers.Timer(1000);
         public static MediaPlayer mediaPlayer = new MediaPlayer();
-
-        private ListSortDirection _sortDirection;
-        private GridViewColumnHeader _sortColumn;
 
         public MainWindow()
         {
             InitializeComponent();
+            SongItems.ItemsSource = SongsCollection;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -77,7 +74,7 @@ namespace ksm_download
             {
                 panel_login.Visibility = Visibility.Visible;
             }
-            Refresh_list();
+            GetPage();
         }
 
         private async Task CheckUpdate()
@@ -108,11 +105,11 @@ namespace ksm_download
             }
         }
 
-        private async void Refresh_list(int page=1,bool clear = false)
+        private async void GetPage(int page = 1)
         {
             try
             {
-                var sdnew = new SongData();//清空列表
+                var sdnew = new SongData();
 
                 SongListJsonRoot jsroot = new SongListJsonRoot();
 
@@ -144,42 +141,26 @@ namespace ksm_download
 
                 maxPage = jslist.Meta.LastPage;
 
-                sd = new ObservableCollection<SongItem>(sdnew.songslist.Select(s =>
-                {
-                    var thisCard = new SongItem();
-                    thisCard.Data = s;
-                    thisCard.RequestLogin += PromptLogin;
-                    thisCard.ChartDownloaded += RefreshView;
-                    return thisCard;
-                }));
+                RefreshList(sdnew.songslist);
 
-                SongItems.ItemsSource = sd;
+                Title = $"kp_d - {SongsCollection.Count} loaded";
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //ignored
             }
         }
 
-        private void RefreshView()
+        public void RefreshList(List<song> songs)
         {
-            /*DirectoryInfo dirinfo = new DirectoryInfo(songExtPath);
-            List<string> ids = new List<string>();
-            foreach (var a in dirinfo.GetDirectories())
+            SongsCollection.Clear();
+
+            songs.ForEach(s =>
             {
-                ids.Add(a.Name);
-            }
-            SongData newList = new SongData();
-            newList.songslist.AddRange(sd.songslist);
-            foreach (var a in newList.songslist)
-            {
-                if (ids.Exists(o => o == a.id.ToString()))
-                {
-                    a.downState = "◉";
-                }
-            }
-            sd = newList;
-            songlistview.ItemsSource = sd.songslist;*/
+                var thisCard = new SongItem(s);
+                thisCard.RequestLogin += PromptLogin;
+                SongsCollection.Add(thisCard);
+            });
         }
 
         private void PromptLogin()
@@ -193,75 +174,13 @@ namespace ksm_download
             //打开qq窗口
         }
 
-        private void button1_Copy_Click(object sender, RoutedEventArgs e)
-        {
-            currentPage = 1;
-            Refresh_list(1,true);
-        }
-
-        //排序
-        private void Sort_Click(object sender, RoutedEventArgs e)
-        {
-            GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
-            if (column == null || column.Column == null)
-            {
-                return;
-            }
-
-            if (_sortColumn == column)
-            {
-                // Toggle sorting direction 
-                _sortDirection = _sortDirection == ListSortDirection.Ascending ?
-                                                   ListSortDirection.Descending :
-                                                   ListSortDirection.Ascending;
-            }
-            else
-            {
-                // Remove arrow from previously sorted header 
-                if (_sortColumn != null && _sortColumn.Column != null)
-                {
-                    _sortColumn.Column.HeaderTemplate = null;
-
-                }
-
-                _sortColumn = column;
-                _sortDirection = ListSortDirection.Ascending;
-
-            }
-
-            if (_sortDirection == ListSortDirection.Ascending)
-            {
-                column.Column.HeaderTemplate = Resources["ArrowUp"] as DataTemplate;
-            }
-            else
-            {
-                column.Column.HeaderTemplate = Resources["ArrowDown"] as DataTemplate;
-            }
-
-            string header = string.Empty;
-
-            // if binding is used and property name doesn't match header content 
-            Binding b = _sortColumn.Column.DisplayMemberBinding as Binding;
-            if (b != null)
-            {
-                header = b.Path.Path;
-            }
-
-            ICollectionView resultDataView = CollectionViewSource.GetDefaultView(
-                                                       (sender as ListView).ItemsSource);
-            resultDataView.SortDescriptions.Clear();
-            resultDataView.SortDescriptions.Add(
-                                        new SortDescription(header, _sortDirection));
-
-        }
-
         private async void button_login_Click(object sender, RoutedEventArgs e)
         {
-            string username = textbox_usrname.Text;
-            string password = textbox_password.Password;
+            var username = textbox_usrname.Text;
+            var password = textbox_password.Password;
             if (username == "" || password == "")
             {
-                MessageBox.Show("傻逼", "傻逼", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("请把用户名和密码框填写完毕哦qwq", "信息不足", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             string sendback = await Download.login(loginAPI, username, password);
@@ -289,12 +208,12 @@ namespace ksm_download
             }
             if (jsonRoot.Data.AvailableDownloadTimes == 2147483646)
             {
-                label_user.Content = "𝖁𝕴𝕻  " + jsonRoot.Data.Usrname;
+                label_user.Content = "𝖁𝕴𝕻  " + jsonRoot.Data.Username;
                 return true;
             }
             else
             {
-                label_user.Content = String.Format("剩余下载次数:{0}    {1}", jsonRoot.Data.AvailableDownloadTimes, jsonRoot.Data.Usrname);
+                label_user.Content = String.Format("剩余下载次数:{0}    {1}", jsonRoot.Data.AvailableDownloadTimes, jsonRoot.Data.Username);
                 return true;
             }
         }
