@@ -139,6 +139,11 @@
             <Button x:Name="button_login" Content="OK" Margin="0,20,0,0" Height="30" HorizontalAlignment="Center" Width="60" UseLayoutRounding="False" Click="button_login_Click"/>
             <Label x:Name="label_skip" Content="跳过" Foreground="White" HorizontalAlignment="Center" Margin="349.5,10,349.5,0" MouseDown="label_skip_MouseDown"/>
         </StackPanel>
+        <Label Content="041c4fd" Margin="10,145,0,0" Height="28" VerticalAlignment="Top" HorizontalAlignment="Left" Width="158" Foreground="White" FontWeight="Bold" Opacity="0.1">
+            <Label.Effect>
+                <DropShadowEffect/>
+            </Label.Effect>
+        </Label>
 
 
     </Grid>

@@ -235,6 +235,8 @@ namespace ksm_download
                 {
                     if (Directory.Exists(extFilepath))
                         Directory.Delete(extFilepath, true);
+                    if (File.ReadAllText(downloadFilename).Contains("404"))
+                        throw new Exception("服务器404");
                     ZipFile.ExtractToDirectory(downloadFilename, extFilepath);
                 }
                 catch (Exception ex)
