@@ -38,7 +38,7 @@ namespace ksm_download
         static string previewfilePath = Environment.CurrentDirectory + "/ksmdownload/prevtmp/";
         static string cookiefilePath = Environment.CurrentDirectory + "/ksmdownload/cookie";
 
-        const float currentVersion = 0.5f; 
+        const float currentVersion = 0.52f; 
 
         string cookie = "";
         int currentPage = 1;
@@ -66,10 +66,11 @@ namespace ksm_download
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            await CheckUpdate();
-
+            version.Content = currentVersion;
             Directory.CreateDirectory(ksmPath);
             Directory.CreateDirectory(songExtPath);
+            await CheckUpdate();
+
 
             timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
             if (File.Exists(cookiefilePath))
@@ -235,7 +236,7 @@ namespace ksm_download
                 {
                     if (Directory.Exists(extFilepath))
                         Directory.Delete(extFilepath, true);
-                    if (File.ReadAllText(downloadFilename).Contains("404"))
+                    if (File.ReadAllText(downloadFilename).StartsWith("{\"code\":404,\"msg\":\"Not found\"}"))
                         throw new Exception("服务器404");
                     ZipFile.ExtractToDirectory(downloadFilename, extFilepath);
                 }
