@@ -64,13 +64,17 @@ namespace ksm_download
             log.Text = a + "\n"+ log.Text;
         }
 
+        void printLog(string a)
+        {
+            log.Text = a + "\n"+ log.Text;
+        }
+
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             version.Content = currentVersion;
             Directory.CreateDirectory(ksmPath);
             Directory.CreateDirectory(songExtPath);
             await CheckUpdate();
-
 
             timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
             if (File.Exists(cookiefilePath))
